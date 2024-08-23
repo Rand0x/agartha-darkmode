@@ -2,12 +2,12 @@ Uuid: b4915681326648b1a12e4059d71bc909
 ExtensionType: 2
 Name: Agartha - LFI, RCE, SQLi, Auth, HTTP to JS
 RepoName: agartha
-ScreenVersion: 1.0
+ScreenVersion: 2.0
 SerialVersion: 4
 MinPlatformVersion: 0
 ProOnly: False
 Author: Volkan Dindar
-ShortDescription: Creates dynamic payloads to reveal injection flaws, generates user access tables to spot authentication/authorization issues, and copy Http requests as JavaScript code.
+ShortDescription: Helps identifying injection flaws (LFI, RCE, SQLi), authentication/authorization issues, and HTTP 403 access violations, while also converting HTTP requests to JavaScript for enhanced XSS exploitation.
 EntryPoint: Agartha.py
 BuildCommand: 
 SupportedProducts: Pro, Community
