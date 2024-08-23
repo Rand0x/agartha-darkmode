@@ -1,125 +1,171 @@
 # Agartha - LFI, RCE, SQLi, Auth, HTTP to JS
-Agartha is a penetration testing tool which creates dynamic payload lists and user access matrix to reveal injection flaws and authentication/authorization issues. There are many different attack payloads alredy exist, but Agartha creates run-time, systematic and vendor-neutral payloads with many different possibilities and bypassing methods. It also draws attention to user session and URL relationships, which makes easy to find user access violations. And additionally, it converts Http requests to JavaScript to help digging up XSS issues more. 
+Agartha, specializes in advance payload generation and access control assessment. It adeptly identifies vulnerabilities related to injection attacks, and authentication/authorization issues. The dynamic payload generator crafts extensive wordlists for various injection vectors, including SQL Injection, Local File Inclusion (LFI), and Remote Code Execution(RCE). Furthermore, the extension constructs a comprehensive user access matrix, revealing potential access violations and privilege escalation paths. It also assists in performing HTTP 403 bypass checks, shedding light on auth misconfigurations. Additionally, it can convert HTTP requests to JavaScript code to help digging up XSS issues more.
 
 In summary:
 
-- **Payload Generator**: It creates payloads/wordlists for different attack types.
-	- **Local File Inclusion, Directory Traversal**: It creates file dictionary lists with various encoding and escaping characters.
-	- **Command Injection / Remote Code Execution**: It creates command dictionary lists for both unix and windows environments with different combinations.
-	- **SQL Injection**: It creates Stacked Queries, Boolean-Based, Union-Based and Time-Based SQL Injection wordlist for various databases to help finding vulnerable spots.
-- **Authorization Matrix**: It creates an access matrix based on user sessions and URL lists, to determine authorization/authentication related violations. 
-	- You can use **'SiteMap'** generator feature to create URL list. It will populate visible links automatically and the result will totally depend on the user's header.
-- And **Copy as JavaScript**: It converts Http requests to JavaScript code for further XSS exploitation and more.<br/><br/>
+- **Payload Generator**: It dynamically constructs comprehensive wordlists for injection attacks, incorporating various encoding and escaping characters to enhance the effectiveness of security testing. These wordlists cover critical vulnerabilities such as SQL Injection, Local File Inclusion (LFI), and Remote Code Execution, making them indispensable for robust security testing.
+	- **Local File Inclusion, Path Traversal:** It helps identifying vulnerabilities that allow attackers to access files on the server's filesystem.
+	- **Remote Code Execution, Command Injection:** It aims to detects potential command injection points, enabling robust testing for code execution vulnerabilities.
+	- **SQL Injection:** It assists to uncover SQL Injection vulnerabilities, including Stacked Queries, Boolean-Based, Union-Based, and Time-Based.
+- **Auth Matrix**: By constructing a comprehensive access matrix, the tool reveals potential access violations and privilege escalation paths. This feature enhances security posture by addressing authentication and authorization issues. 
+	- You can use the web **'Spider'** feature to generate a sitemap/URL list, and it will crawl visible links from the user's session automatically.
+- **403 Bypass**: It aims to tackle common access restrictions, such as HTTP 403 Forbidden responses. It utilizes techniques like URL manipulation and request header modification to bypass implemented limitations.
+- **Copy as JavaScript**: It converts Http requests to JavaScript code for further XSS exploitation and more.<br/><br/>
 
 Here is a small tutorial how to use.
 
 ## Installation
 You should download 'Jython' file and set your environment first:
-- Burp Menu > Extender > Options > Python Environment > Locate Jython standalone jar file (tested in Jython v2.7.3).
+- Burp Menu > Extender > Options > Python Environment > Locate Jython standalone jar file.
 
 You can install Agartha through official store: 
 - Burp Menu > Extender > BApp Store > Agartha
 
 Or for manual installation:
-- Burp Menu > Extender > Extensions > Add > Extension Type: Python > Extension file(.py): Select 'agartha.py' file
+- Burp Menu > Extender > Extensions > Add > Extension Type: Python > Extension file(.py): Select 'Agartha.py' file
 
 After all, you will see 'Agartha' tab in the main window and it will be also registered the right click, under: 
-- 'Extensions > Agartha - LFI, RCE, SQLi, Auth, HTTP to JS', with two sub-menus
-	- 'Authorization Matrix'
-	- 'Copy as JavaScript'<br/><br/>
+- 'Extensions > Agartha - LFI, RCE, SQLi, Auth, HTTP to JS', with three sub-menus:
+	- **'Auth Matrix'**
+ 	- **'403 Bypass'**
+	- **'Copy as JavaScript'**<br/><br/>
 
-## Local File Inclusion, Directory Traversal
-It both supports unix and windows file syntax. You can generate any wordlists dynamically for the path you want. You just need to supply a file path and that's all. 
-- **'Depth'** is representation of how deep the wordlist should be. You can generate wordlists 'till' or 'equal to' this value.
-- **'Waf Bypass'** asks for if you want to include all bypass features; like null bytes, different encoding, etc.
 
-<img width="1000" alt="Directory Traversal/Local File Inclusion wordlist" src="https://user-images.githubusercontent.com/50321735/195392551-f43be30a-5dc8-4337-bd49-2c3d65da325c.gif"><br/><br/>
+## Local File Inclusion / Path Traversal
+It supports both Unix and Windows file syntaxes, enabling dynamic wordlist generation for any desired path. Additionally, it can attempt to bypass Web Application Firewall (WAF) implementations, with various encodings and other techniques.
+- **'Depth'** specifies the extent of directory traversal for wordlist generation. You can create wordlists that reach up to or equal to this specified level. The default value is 5.
+- **'Waf Bypass'** inquires whether you want to enable all bypass features, such as the use of null bytes, various encoding techniques, and other methods to circumvent web application firewalls.
 
-## Command Injection / Remote Code Execution
-It creates command execution dynamic wordlists with the command you supply. It combines different separators and terminators for both unix and windows environments together.
-- **'URL Encoding'** encodes dictionary output.
+<img width="1000" alt="Directory Traversal/Local File Inclusion wordlist" src="https://github.com/volkandindar/agartha/assets/50321735/b457e6c2-0829-4959-84aa-9116886b99f7"><br/><br/>
 
-<img width="1000" alt="Remote Code Execution wordlist" src="https://user-images.githubusercontent.com/50321735/195392183-cea812d2-4301-4bf0-8d2a-43510c144a99.gif"><br/><br/>
+
+
+## Remote Code Execution / Command Injection
+It generates dynamic wordlists for command execution based on the supplied command. It combines various separators and terminators for both Unix and Windows environments.
+- **'URL Encoding'** encodes the output.
+
+<img width="1000" alt="Remote Code Execution wordlist" src="https://github.com/volkandindar/agartha/assets/50321735/d28c12c9-c6fb-4509-9299-888f3f048c12"><br/><br/>
 
 ## SQL Injection
-It generates payloads for Stacked Queries, Boolean-Based, Union-Based, Time-Based SQL Injection attacks, and you do not need to supply any inputs. You just pick what type of SQL attacks and databases you want, then it will generate a wordlist with different combinations. 
-- **'URL Encoding'** encodes dictionary output.
-- **'Waf Bypass'** asks for if you want to include all bypass features; like null bytes, different encoding, etc.
-- **'Union-Based'** ask for how deep the payload should be. The default value is 5.
-- And the rest is related with databases and attack types.
+It generates payloads for various types of SQL injection attacks, including Stacked Queries, Boolean-Based, Union-Based, and Time-Based. It doesn’t require any user inputs; you simply select the desired SQL attack types and databases, and it generates a wordlist with different combinations.
+- **'URL Encoding'** encodes the output.
+- **'Waf Bypass'** inquires whether you want to enable all bypass features, such as the use of null bytes, various encoding techniques, and other methods to circumvent web application firewalls.
+- **'Union-Based'** requires the specified depth for payload generation. You can create wordlists that reach up to the given value. The default value is 5.
+- The remaining aspects pertain to database types and various attack vectors.
 
-<img width="1000" alt="SQL Injection wordlist" src="https://github.com/volkandindar/agartha/assets/50321735/b604c709-11a5-481c-b8b8-17868144ddcc"><br/><br/>
+<img width="1000" alt="SQL Injection wordlist" src="https://github.com/volkandindar/agartha/assets/50321735/51a010b6-4d9a-4dc9-a634-b353f6b30b95"><br/><br/>
 
 ## Authorization Matrix / User Access Table
-This part focuses on user session and URLs relationships to determine access violations. The tool will visit all URLs from pre-defined user sessions and fill the table with all Http responses. It is a kind of access matrix and helps to find out authentication/authorization issues. Afterwards you will see what users can access what page contents.
-- You can right click on any request ('Extensions > Agartha > Authorization Matrix') to define **user sessions**.
-- Next, you need to provide **URL addresses** the user (Http header/session owner) can visit. You can use internal 'SiteMap' generator feature or supply any manual list. 
-- And then, you can use **'Add User'** button to add the user sessions.
-- Now, it is ready for execution with only clicking **'Run'** button, and it will fill the table. 
+This part focuses on analyzing user session and URL relationships to identify access violations. The tool systematically visits all URLs associated with pre-defined user sessions and populates a table with HTTP responses. Essentially, it creates an access matrix, which aids in identifying authentication and authorization issues. Ultimately, this process reveals which users can access specific page contents.
+- You can right-click on any request and navigate to 'Extensions > Agartha > Auth Matrix' to define **user sessions**.
+- Next, you need to provide the **URL addresses** that the user (HTTP header/session owner) can access. You can utilize the web 'Spider' feature for automated crawling or supply a manually curated list of URLs.
+- Afterward, you can use the **'Add User'** button to include the user sessions.
+- Now, it's ready for execution. Simply click the **'Run'** button, and the table will be populated accordingly.
 
-<img width="1000" alt="Authorization Matrix" src="https://github.com/volkandindar/agartha/assets/50321735/d43f5bee-6eb3-4fda-9737-d8cdad293863">
+<img width="1000" alt="Authorization Matrix" src="https://github.com/volkandindar/agartha/assets/50321735/6f89e22c-e29c-413d-96d8-c2a8d7ac39d4">
+
 
 A little bit more details:
-1. What's username for the session you provide. You can add up to 4 different users and each user will have a different color to make it more readable.
-	- 'Add User' for adding user sessions to matrix.
-	- You can change Http request method between 'GET' and POST.
-	- 'Reset' button clear all contents.
-	- 'Run' button execute the task and the result will show user access matrix.
-	- 'Warnings' indicates possible issues in different colors.
-	- 'SiteMap' button generates URL list automatically and the result totally depends on the user's header/session. Visible URLs will be populated in next textbox and you can still modify it.
-	- 'Crawl Depth' is defination for how many sub-links (max depth) 'SiteMap' spider should go and detect links.
-2. It is the field for request headers and all URLs will be visited over the session defined in here.
-3. URL addresses that user can visit. You can create this list with manual effort or use **'SiteMap'** generator feature. You need to provide visitable URL lists for each users.
-4. All URLs you supply will be in here and they will be visited with the corresponding user sessions.
-5. No authentication column. All cookies, tokens and possible session parameters will be removed form Http calls.
-6. The rest of columns belong to users you created respectively and each of them has a unique color which indicates the URL owners.  
-7. Cell titles show Http 'response codes:response lengths' for each user sessions.
-8. Just click the cell you want to examine and Http details will be shown in the bottom.
+1. This is the field where you enter the username for the session you provide. You can add up to four different users, with each user being assigned a unique color to enhance readability.
+ 	- The 'Add User' button allows you to include user sessions in the matrix.
+ 	- You can change the HTTP request method to 'GET', 'POST', or 'Dynamic', the latter of which is based on proxy history.
+ 	- The 'Reset' button clears all contents.
+ 	- The 'Run' button executes the task, displaying the results in the user access matrix.
+ 	- The 'Warnings' section highlights potential issues using different colors for easy identification.
+ 	- The 'Spider (SiteMap)' button automatically generates a URL list based on the user's header/session. The visible URLs will be populated in the next textbox, where you can still make modifications as needed.
+ 	- 'Crawl Depth' defines the maximum number of sub-links that the 'Spider' should crawl to detect links.
+2. The field is for specifying request headers, and all URLs will be accessed using the session defined here.
+3. Specify the URL addresses that users can visit. You can create this list manually or utilize the **'Spider'** crawler feature. Make sure to provide a visitable URL list for each user.
+4. All provided URLs will be listed here and attempted to access using the corresponding user sessions.
+5. The first column represents a scenario with no authentication attempt. All cookies, tokens, and potential session parameters will be removed from the HTTP calls.
+6. The remaining columns correspond to the users previously generated, each marked with a unique color to indicate the respective URL owners. 
+7. The cell titles display the HTTP response 'codes:lengths' for each user session, providing a clear overview of the response details for each access attempt.
+8. Just click on the cell you want to examine, and the HTTP details will be displayed at the bottom.
 
-<img width="1000" alt="User Access Table Details" src="https://github.com/volkandindar/agartha/assets/50321735/4418ad6f-cd24-425e-bd3b-00dfdfda8c4f">
+Please note that potential session terminators (such as logoff, sign-out, etc.) and specific file types (such as CSS, images, JavaScript, etc.) will be filtered out from both the 'Spider' and the user's URL list.
 
-After clicking 'RUN', the tool will fill user and URL matrix with different colors. Besides the user colors, you will see orange, yellow and red cells. The URL address does not belong to the user, and if the cell color is:
-- Yellow, because the response returns 'HTTP 302' with authentication/authorization concerns
-- Orange, because the response returns 'HTTP 200' but different content length, with authentication/authorization concerns
-- Red, because the response returns 'HTTP 200' and same content length, with authentication/authorization concerns
+<img width="1000" alt="User Access Table Details" src="https://github.com/volkandindar/agartha/assets/50321735/e7ce918e-d40e-44c5-ada7-ee1c0cfa487b">
 
-You may also notice, it support only one Http request method and user session at the same time, because it processes bulk requests and it is not possible to provide different header options for each calls. But you may play with 'GET/POST' methods to see response differences.<br/><br/>
+After clicking 'RUN', the tool will populate the user and URL matrix with different colors. In addition to user-specific colors, you will see red, orange, and yellow cells indicating possible access issues.
+- **Red** highlights a critical access violation, indicated by the response returning 'HTTP 200' with the same content length.
+- **Orange** signifies a moderate issue that needs attention, marked by the response returning 'HTTP 200' but with a different content length.
+- **Yellow** indicates that the response returns an 'HTTP 302' status, signifying a redirection.
 
+The task at hand involves a bulk process, and it is worth to mention which HTTP request methods will be used. The tool provides three different options for performing HTTP calls:
+- **GET**, All requests are sent using the GET method.
+- **POST**, All requests are sent using the POST method.
+- **Dynamic**, The request method is determined by the proxy history. If no information is available, the base header method will be used by default.<br/><br/>
+
+## 403 Bypass
+HTTP 403 Forbidden status code indicates that the server understands the request but refuses to authorize it. Essentially, it means, ‘I recognize who you are, but you lack permission to access this resource.’ This status often points to issues like ‘insufficient permissions’, ‘authentication required’, ‘IP restrictions’, etc.
+
+The tool addresses the common access forbidden error by employing various techniques, such as URL manipulation and request header modification. These strategies aim to bypass access restrictions and retrieve the desired content.
+
+It is worth to mention two different usage cases:
+1. In scenarios related to **Authentication Issues**, it is essential to consider removing all session identifiers. After doing so, test whether any sources become publicly accessible. This approach helps identify unauthenticated accesses and ensures that sensitive information remains protected. 
+2. For **Privilege Escalation and Authorization** testing, retain session identifiers but limit their use to specific user roles. For instance, you can utilize a regular user’s session while substituting an administrative URL. This focused approach allows for more precise and efficient testing, ensuring that privileged sources are not accessible without the appropriate roles. 
+
+There are 2 ways you can send HTTP requests to the tool.
+1. You can load requests from proxy history by clicking the ‘Load Requests’ button. Doing so will automatically remove all session identifiers, making it suitable for attack **Case 1**. Any potential session terminators (such as logoff, sign-out, etc.) and specific file types (such as CSS, images, JavaScript, etc.) will be also filtered out. Please note that this will be a bulk process and may take longer as it involves revisiting each HTTP request from the history. However, this comprehensive verification of all endpoints is essential for ensuring the security of the authentication mechanisms
+2. You can send individual requests by right-clicking. Session identifiers will be retained/untouched, making this approach suitable for attack **Case 2**. This controlled approach allows you to assess whether privileged sources are accessible without proper roles. It will be more specific and faster, as users will select which URLs to test rather than copying everything from history.
+
+<img width="1000" alt="Sending individual requests" src="https://github.com/volkandindar/agartha/assets/50321735/54b567a0-6b69-43f4-b727-f01709f4cc79">
+
+The page we aim to access belongs to a privileged user group, and we retain our session identifiers to verify if Privilege Escalation is feasible.
+<br/><br/>
+Simply clicking the 'RUN' button will execute the task.
+
+The figure below illustrates that a URL may have an access issue, with the ‘Red’ color indicating a warning.
+
+<img width="1000" alt="Attempt details" src="https://github.com/volkandindar/agartha/assets/50321735/b7c81258-aa11-42dc-87c6-c25b1047056c">
+
+1. Load requests from the proxy history by selecting the target hostname and clicking the ‘Load Requests’ button.
+2. URL and Header details
+3. Request attempts and results
+4. HTTP requests and responses
+
+Please note that the number of attempts is contingent upon the specific target URL.
+<br/><br/>
 
 ## Copy as JavaScript
-The feature is for converting Http requests to JavaScript code. It can be useful to dig up further XSS issues and bypass header restrictions.
+The feature enables the conversion of HTTP requests into JavaScript code, which can be particularly useful for going beyond XSS vulnerabilities and bypassing header restrictions.
 
-To access it, right click any Http request and 'Extensions > Agartha > Copy as JavaScript'.
+To use this feature, simply right-click on any HTTP request and select 'Extensions > Agartha > Copy as JavaScript'.
 
-<img width="1000" alt="Copy as JavaScript" src="https://github.com/volkandindar/agartha/assets/50321735/4605b296-4c94-456c-b5b2-c8042a348cd2">
+<img width="1000" alt="Copy as JavaScript" src="https://github.com/volkandindar/agartha/assets/50321735/c0149adb-d0ab-4aa3-98a1-34b86bd68d3f">
 
-It will automatically save it to your clipboard with some remarks. For example:
+It will automatically save to your clipboard, including some additional remarks for your reference. For example:
 ```
 Http request with minimum header paramaters in JavaScript:
-	<script>var xhr=new XMLHttpRequest();
+	<script>
+		var xhr=new XMLHttpRequest();
 		xhr.open('GET','http://dvwa.local/vulnerabilities/xss_r/?name=XSS');
 		xhr.withCredentials=true;
 		xhr.send();
 	</script>
 
 Http request with all header paramaters (except cookies, tokens, etc) in JavaScript, you may need to remove unnecessary fields:
-	<script>var xhr=new XMLHttpRequest();
+	<script>
+		var xhr=new XMLHttpRequest();
 		xhr.open('GET','http://dvwa.local/vulnerabilities/xss_r/?name=XSS');
 		xhr.withCredentials=true;
 		xhr.setRequestHeader('Host',' dvwa.local');
-		xhr.setRequestHeader('User-Agent',' Mozilla/5.0 Gecko/20100101 Firefox/114.0');
+		xhr.setRequestHeader('User-Agent',' Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:127.0) Gecko/20100101 Firefox/127.0');
 		xhr.setRequestHeader('Accept',' text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8');
-		xhr.setRequestHeader('Accept-Language',' en-GB,en;q=0.5');
-		xhr.setRequestHeader('Accept-Encoding',' gzip, deflate');
-		xhr.setRequestHeader('Connection',' close');
+		xhr.setRequestHeader('Accept-Language',' en-US,en;q=0.5');
+		xhr.setRequestHeader('Accept-Encoding',' gzip, deflate, br');
+		xhr.setRequestHeader('DNT',' 1');
+		xhr.setRequestHeader('Sec-GPC',' 1');
+		xhr.setRequestHeader('Connection',' keep-alive');
 		xhr.setRequestHeader('Referer',' http://dvwa.local/vulnerabilities/xss_r/');
 		xhr.setRequestHeader('Upgrade-Insecure-Requests',' 1');
+		xhr.setRequestHeader('Priority',' u=1');
 		xhr.send();
 	</script>
 
 For redirection, please also add this code before '</script>' tag:
 	xhr.onreadystatechange=function(){if (this.status===302){var location=this.getResponseHeader('Location');return ajax.call(this,location);}};
 ```
-Please note that, the JavaScript code will be called over original user session and many header fields will be filled automatically by browsers. In some cases, the server may require some header field mandatory, and therefore you may need to modify the code for an adjustment.
+Please note that the JavaScript code will execute within the original user session, with many header fields automatically populated by the browser. However, in some cases, the server may require specific mandatory header fields. For example, certain requests might fail if the 'Content-Type' is incorrect. Therefore, you may need to adjust the code to ensure compatibility with the server's requirements.
 <br/><br/>
 [Another tutorial link](https://www.linkedin.com/pulse/agartha-lfi-rce-auth-sqli-http-js-volkan-dindar)
