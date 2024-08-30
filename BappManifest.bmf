@@ -3,7 +3,7 @@ ExtensionType: 2
 Name: Agartha - LFI, RCE, SQLi, Auth, HTTP to JS
 RepoName: agartha
 ScreenVersion: 2.0
-SerialVersion: 4
+SerialVersion: 5
 MinPlatformVersion: 0
 ProOnly: False
 Author: Volkan Dindar
