@@ -2,6 +2,8 @@
 Author: Volkan Dindar
         volkan.dindar@owasp.org
         https://github.com/volkandindar/agartha
+        Rand0x - Darkmode
+        https://github.com/Rand0x
 """
 try:
     import sys, re, urlparse, random, os, urllib, posixpath
@@ -20,7 +22,7 @@ except:
 VERSION = "2.0"
 
 class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFactory, IBurpExtenderCallbacks, IExtensionHelpers):
-    
+
     def registerExtenderCallbacks(self, callbacks):
         self._callbacks = callbacks
         self._helpers = callbacks.getHelpers()
@@ -57,7 +59,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._requestViewer.setMessage("", False)
         self._responseViewer.setMessage("", False)
         self._lblAuthNotification.text = " "
-        self._tbAuthNewUser.setForeground (Color.black)
+        self._tbAuthNewUser.setForeground (Color(188,188,188))
         self._btnAuthNewUserAdd.setEnabled(False)
         self._btnAuthRun.setEnabled(False)
         self._cbAuthColoring.setEnabled(False)
@@ -70,7 +72,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         for x in range(0, self.tableMatrix.getRowCount()):
             for y in range(1, self.tableMatrix.getColumnCount()):
                 self.tableMatrix.setValueAt("", x, y)
-        
+
         i = 1000000 / ( self.tableMatrix.getRowCount() * (self.tableMatrix.getColumnCount()-1) )
 
         for x in range(0, self.tableMatrix.getRowCount()):
@@ -79,22 +81,22 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 self.progressBar.setValue(self.progressBar.getValue() + i)
                 self._lblAuthNotification.text = "It is still in progress, '" + str(int(self.progressBar.getValue() / 10000))  + "%' has been completed so far."
 
-        
+
         self._customRenderer = UserEnabledRenderer(self.tableMatrix.getDefaultRenderer(str), self.userNamesHttpUrls, "")
         self._customTableColumnModel = self.tableMatrix.getColumnModel()
         for y in range(0, self.tableMatrix.getColumnCount()):
             self._customTableColumnModel.getColumn(y).setCellRenderer(self._customRenderer)
         self.tableMatrix.repaint()
-        self.tableMatrix.setSelectionForeground(Color.red)
+        self.tableMatrix.setSelectionForeground(Color(255,175,0))
         self._btnAuthNewUserAdd.setEnabled(True)
         self._btnAuthRun.setEnabled(True)
         self._cbAuthColoring.setEnabled(True)
         self._btnAuthReset.setEnabled(True)
         self._cbAuthGETPOST.setEnabled(True)
         self.progressBar.setValue(1000000)
-        self._lblAuthNotification.text = "Blue, Green, Purple and Beige colors are representation of users. Yellow, Orange and Red cell colors show warning levels."        
+        self._lblAuthNotification.text = "Blue, Green, Purple and Beige colors are representation of users. Yellow, Orange and Red cell colors show warning levels."
         return
-    
+
     def headerAdjustment(self, _header, _url, userID):
         returnMethod = ''
         headerMethod = 'GET'
@@ -120,7 +122,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     header = (self._helpers.bytesToString(self._callbacks.getHelpers().toggleRequestMethod(history.getRequest()))).split('\n', 1)[0]
                     returnMethod = 'POST'
                 break
-        
+
         if not returnMethod:
             if headerMethod == 'GET':
                 return _header
@@ -157,10 +159,10 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             else:
                 if urlparse.urlparse(urlAdd).scheme == "https":
                     portNum = 443
-    
+
             _httpReqRes = self._callbacks.makeHttpRequest(self._helpers.buildHttpService(urlparse.urlparse(urlAdd).hostname, portNum, urlparse.urlparse(urlAdd).scheme), header)
             self.httpReqRes[userID].append(_httpReqRes)
-            
+
             return "HTTP " + str(self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getStatusCode()) + " : " + format(len(self._helpers.bytesToString(_httpReqRes.getResponse())) - self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getBodyOffset(), ',d') + " bytes"
         except:
             return str(sys.exc_info()[1])
@@ -168,36 +170,36 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
     def authAdduser(self, ev):
         if self.userCount == 4:
             self._lblAuthNotification.text = "You can add up to 4 users"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
-        
+
         if not self._tbAuthURL.getText().strip():
             self._lblAuthNotification.text = "Please provide minimum one URL!"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
 
         for _url in self._tbAuthURL.getText().split('\n'):
             _url = _url.strip()
             if not self.isURLValid(str(_url)) or _url == self._txtURLDefault:
-                self._tbAuthURL.setForeground (Color.red)
+                self._tbAuthURL.setForeground (Color(255,175,0))
                 self._lblAuthNotification.text = "URLs should start with 'http/s' and not have any spaces. Please check: '" + _url + "'"
-                self._lblAuthNotification.setForeground (Color.red)
+                self._lblAuthNotification.setForeground (Color(255,175,0))
                 return
-        self._tbAuthURL.setForeground (Color.black)
+        self._tbAuthURL.setForeground (Color(188,188,188))
 
         if not self._tbAuthHeader.getText().strip() or self._tbAuthHeader.getText().strip() == self._txtHeaderDefault:
-            self._tbAuthHeader.setForeground (Color.red)
+            self._tbAuthHeader.setForeground (Color(255,175,0))
             self._lblAuthNotification.text = "Please provide a valid header!"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
-        self._tbAuthHeader.setForeground (Color.black)
+        self._tbAuthHeader.setForeground (Color(188,188,188))
 
         if self._tbAuthNewUser.text.strip() in self.userNames or not self._tbAuthNewUser.text.strip() or len(self._tbAuthNewUser.text.strip()) > 20:
-            self._tbAuthNewUser.setForeground (Color.red)
+            self._tbAuthNewUser.setForeground (Color(255,175,0))
             self._lblAuthNotification.text = "Please add another user name, that must be unique and less then 20 chars!"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
-        self._tbAuthNewUser.setForeground (Color.black)
+        self._tbAuthNewUser.setForeground (Color(188,188,188))
 
         if self.userCount == 0:
             # header for unauth user
@@ -208,7 +210,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 if not line:
                     break
             self.userNamesHttpReq[0] = unauthHeader
-        
+
         self.userCount = self.userCount + 1
         self.userNames.append(self._tbAuthNewUser.text.strip())
         self.userNamesHttpReq.append(self._tbAuthHeader.getText())
@@ -233,17 +235,17 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         # check table if url exists
                         self.tableMatrix_DM.addRow([_url])
                         _itemAdded = True
-        
+
         self._tbAuthURL.setText(self._tbAuthURL.getText().split('\n')[0]+"\n")
         self._btnAuthRun.setEnabled(True)
         self._btnAuthReset.setEnabled(True)
         if _itemAdded:
             self._lblAuthNotification.text = "'" + self._tbAuthNewUser.text.strip() + "' added successfully! Possible session terminators (signout, logoff, etc.), dangerous commands (kill, terminate, delete, etc.), and file types (gif, js, etc.) have been filtered out!"
-            self._lblAuthNotification.setForeground (Color.black)
+            self._lblAuthNotification.setForeground (Color(188,188,188))
             self._cbAuthColoring.setEnabled(True)
             self._cbAuthGETPOST.setEnabled(True)
             self.tableMatrix.repaint()
-            self.tableMatrix.setSelectionForeground(Color.red)
+            self.tableMatrix.setSelectionForeground(Color(255,175,0))
             self._customRenderer = UserEnabledRenderer(self.tableMatrix.getDefaultRenderer(str), self.userNamesHttpUrls, "")
             self._customTableColumnModel = self.tableMatrix.getColumnModel()
             for y in range(0,self.tableMatrix.getColumnCount()):
@@ -264,16 +266,16 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         return
 
     def _cbUnionBasedFunc(self, ev):
-        if self._cbUnionBased.isSelected(): 
+        if self._cbUnionBased.isSelected():
             self._cbUnionDepth.setEnabled(True)
         else:
             self._cbUnionDepth.setEnabled(False)
         return
 
     def funcGeneratePayload(self, ev):
-        self._lblStatusLabel.setForeground (Color.red)
+        self._lblStatusLabel.setForeground (Color(255,175,0))
         self._tabDictResultDisplay.setText("")
-        if self._rbDictSQLi.isSelected():            
+        if self._rbDictSQLi.isSelected():
             self._txtTargetPath.setText(self._txtDefaultSQLi)
         elif not self.isValid():
             if self._rbDictLFI.isSelected():
@@ -282,9 +284,9 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             elif self._rbDictCommandInj.isSelected():
                 self._lblStatusLabel.setText("Command input is not valid. " + self._txtDefaultCommandInj)
                 self._txtTargetPath.setText(random.choice(["sleep 120", "timeout 120"]))
-            return 
+            return
 
-        self._lblStatusLabel.setForeground (Color.black)
+        self._lblStatusLabel.setForeground (Color(188,188,188))
         self._txtTargetPath.text = self._txtTargetPath.text.strip()
         self._lblStatusLabel.setText("")
         if self._rbDictCommandInj.isSelected():
@@ -292,9 +294,9 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         if self._rbDictLFI.isSelected():
             self.funcLFI(self)
         if self._rbDictSQLi.isSelected():
-            self.funcSQLi(self)            
+            self.funcSQLi(self)
         return
-       
+
     def isValid(self):
         # input should not be empty, should contain at least one alphanumeric char and less than 250 length
         if self._txtTargetPath.text.strip() and re.compile("[0-9a-zA-Z]").findall(self._txtTargetPath.text) and self._txtTargetPath.text.strip() !=self._txtDefaultLFI and self._txtTargetPath.text.strip() !=self._txtDefaultCommandInj and len(self._txtTargetPath.text.strip()) < 250:
@@ -303,7 +305,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             return False
 
     def funcRBSelection(self, ev):
-        self._lblStatusLabel.setForeground (Color.black)
+        self._lblStatusLabel.setForeground (Color(188,188,188))
         self._lblStatusLabel.setText("")
         self._tabDictPanel_LFI.setVisible(False)
         self._cbDictCommandInjOpt.setVisible(False)
@@ -330,11 +332,11 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         return
 
     def funcCommandInj(self, ev):
-        listCommandInj = []        
+        listCommandInj = []
         prefixes = ["", "\\n", "\\\\n", "\\r\\n", "\\\\r\\\\n", "%0a", "%0d%0a"]
         escapeChars = ["",  "'", "\\'", "\\\\'", "\"", "\\\"", "\\\\\""]
         separators = ["&", "&&", "|", "||", ";"]
-        
+
         for prefix in prefixes:
             for escapeChar in escapeChars:
                 if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
@@ -353,10 +355,10 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
         listCommandInj = list(set(listCommandInj))
         listCommandInj.sort(reverse=True)
-        
+
         if self._cbDictCommandInjEncoding.isSelected():
             listCommandInj = self.encodeURL(listCommandInj)
-        
+
         self._tabDictResultDisplay.setText(''.join(map(str, listCommandInj)))
         self._lblStatusLabel.setText('Payload list for "' + self._txtTargetPath.text + '" command returns with '+ str(len(listCommandInj)) + ' result.')
         return
@@ -364,12 +366,12 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
     def funcLFI(self, ev):
         listLFI = []
         dept = int(self._cbDictDepth.getSelectedItem())
-        
+
         if self._txtTargetPath.text.startswith('/') or self._txtTargetPath.text.startswith('\\'):
             self._txtTargetPath.text = self._txtTargetPath.text[1:]
-        
+
         filePath = self._txtTargetPath.text.replace("\\","/")
-        
+
         counter = 0
         if self._cbDictEquality.isSelected():
             counter = dept
@@ -423,7 +425,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     suffixes = ["", ";index.html", "%00", "%00.html", "%0a", "%0a.html", "%0d", "%0d.html", "%09", "%09.html"]
                     for suffix in suffixes:
                         listLFI.append(_upperDirectory.replace("/", _slash) + filePath + suffix + "\n")
-                        listLFI.append(_upperDirectory.replace("/", _slash) + self._txtTargetPath.text + suffix + "\n")                    
+                        listLFI.append(_upperDirectory.replace("/", _slash) + self._txtTargetPath.text + suffix + "\n")
                         if "\\" in self._txtTargetPath.text:
                             listLFI.append(_upperDirectory[:-1].replace("/", _slash) + "\\" + self._txtTargetPath.text + suffix + "\n")
                         else:
@@ -442,7 +444,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         listLFI.append((_upperDirectory + filePath).replace("/", _slashes[i]) + "\n")
                         listLFI.append((_upperDirectory).replace("/", _slashes[i]).replace("..", _dots[i]) + filePath + "\n")
                         listLFI.append((_upperDirectory)[:-1].replace("/", _slashes[i]).replace("..", _dots[i]) + "/" + filePath + "\n")
-                        listLFI.append((_upperDirectory + filePath).replace("/", _slashes[i]).replace("..", _dots[i]) + "\n")                    
+                        listLFI.append((_upperDirectory + filePath).replace("/", _slashes[i]).replace("..", _dots[i]) + "\n")
                         listLFI.append((_upperDirectory).replace("..", _dots[i]) + filePath + "\n")
                     else:
                         for suffix in suffixes:
@@ -459,19 +461,19 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         listLFI = list(set(listLFI))
         listLFI.sort(reverse=True)
         self._tabDictResultDisplay.setText(''.join(map(str, listLFI)))
-        self._lblStatusLabel.setText('Payload list for "' + self._txtTargetPath.text + '" path returns with '+ str(len(listLFI)) + ' result. Please make sure payload encoding is disabled, unless you are sure what you are doing.') 
+        self._lblStatusLabel.setText('Payload list for "' + self._txtTargetPath.text + '" path returns with '+ str(len(listLFI)) + ' result. Please make sure payload encoding is disabled, unless you are sure what you are doing.')
         return
 
     def funcSQLi(self, ev):
-        self._lblStatusLabel.setForeground (Color.black)
+        self._lblStatusLabel.setForeground(Color(188,188,188))
         if self._cbTimeBased.isSelected() or self._cbStackedSQL.isSelected() or self._cbUnionBased.isSelected():
             if not self._cbMysqlBased.isSelected() and not self._cbMssqlBased.isSelected() and not self._cbPostgreBased.isSelected() and not self._cbOracleBased.isSelected():
-                self._lblStatusLabel.setForeground (Color.red)
+                self._lblStatusLabel.setForeground (Color(255,175,0))
                 self._lblStatusLabel.setText('Please pick a database!')
                 self._tabDictResultDisplay.setText('')
                 return
         if not (self._cbTimeBased.isSelected() or self._cbStackedSQL.isSelected() or self._cbUnionBased.isSelected() or self._cbBooleanBased.isSelected()):
-                self._lblStatusLabel.setForeground (Color.red)
+                self._lblStatusLabel.setForeground (Color(255,175,0))
                 self._lblStatusLabel.setText('Please pick an attack type!')
                 self._tabDictResultDisplay.setText('')
                 return
@@ -503,7 +505,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     if (prefix[:2].count("\\")) and (escapeChar[:2].count("\\")):
                         if (prefix[:2].count("\\") != escapeChar[:2].count("\\")):
                             continue
-                    
+
                     listSQLi.append(prefix + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + escapeChar + "\n")
                     listSQLi.append(prefix + escapeChar + " or " + escapeChar + "xyz" + escapeChar + "=" + escapeChar + "xyz" + "\n")
                     for suffix in suffixes[1:]:
@@ -568,7 +570,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                                         listSQLi.append(prefix + unionPhrase + " from dual" + "\n")
                                     if self._cbTimeBased.isSelected():
                                         if escapeChar:
-                                            listSQLi.append(prefix + escapeChar + unionPhrase.replace("select " + union, "select "+ "dbms_pipe.receive_message((" + escapeChar + "a" + escapeChar + "),60)") + " from dual" + suffix + "\n")                                            
+                                            listSQLi.append(prefix + escapeChar + unionPhrase.replace("select " + union, "select "+ "dbms_pipe.receive_message((" + escapeChar + "a" + escapeChar + "),60)") + " from dual" + suffix + "\n")
                                             listSQLi.append(prefix + escapeChar + unionPhrase.replace("select " + union, "select "+ "dbms_pipe.receive_message(1,60)") + " from dual" + suffix + "\n")
                                             listSQLi.append(prefix + escapeChar + unionPhrase.replace("select " + union, "select "+ "cast(dbms_pipe.receive_message((" + escapeChar + "a" + escapeChar + "),60) as varchar2(10))") + " from dual" + suffix + "\n")
                                             listSQLi.append(prefix + escapeChar + unionPhrase.replace("select " + union, "select "+ "cast(dbms_pipe.receive_message((" + escapeChar + "a" + escapeChar + "),60) as integer)") + " from dual" + suffix + "\n")
@@ -682,7 +684,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                             if escapeChar:
                                 listSQLi.append(prefix + escapeChar + ";select pg_sleep(60)" + suffix + "\n")
                                 listSQLi.append(prefix + escapeChar + " || pg_sleep(60)" + suffix + "\n")
-                                listSQLi.append(prefix + escapeChar + " and 1337=(select 1337 from pg_sleep(60))" + suffix + "\n")                                    
+                                listSQLi.append(prefix + escapeChar + " and 1337=(select 1337 from pg_sleep(60))" + suffix + "\n")
                                 listSQLi.append(prefix + escapeChar + " or 1337=(select 1337 from pg_sleep(60))" + suffix + "\n")
                             else:
                                 listSQLi.append(prefix + ";select pg_sleep(60)" + suffix + "\n")
@@ -792,17 +794,17 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 for _reqLine in _req.splitlines():
                     if any(re.findall(r'Content-type', _reqLine, re.IGNORECASE)):
                         contentType = "xhr.setRequestHeader('Content-type','" + _reqLine.split(" ", 1)[1] + "');"
-                        break                    
-                
+                        break
+
                 sendData = ""
                 if _req.splitlines()[-1]:
                     sendData = "'" + _req.splitlines()[-1] + "'"
-                
+
                 minHeader = "var xhr=new XMLHttpRequest();xhr.open('" + method + "','" + _url + "');xhr.withCredentials=true;"
                 jscript = "Http request with minimum header paramaters in JavaScript:\n\t<script>" + minHeader + contentType.strip() + "xhr.send(" + sendData + ");</script>\n\n"
                 jscript += "Http request with all header paramaters (except cookies, tokens, etc) in JavaScript, you may need to remove unnecessary fields:\n\t<script>" + minHeader + fullHeader + "xhr.send(" + sendData + ");</script>"
             jscript += "\n\nFor redirection, please also add this code before '</script>' tag:\n\txhr.onreadystatechange=function(){if (this.status===302){var location=this.getResponseHeader('Location');return ajax.call(this,location);}};"
-        
+
         clipboard.setContents(StringSelection(jscript), None)
 
     def agartha_menu(self, event):
@@ -817,7 +819,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             _url = _url.replace(":443/", "/")
         elif _url.startswith("http"):
             _url = _url.replace(":80/", "/")
-        
+
         self._tbAuthHeader.setText(_req)
         self._tbAuthHeader.setSelectionStart(0)
         self._tbAuthHeader.setSelectionEnd(0)
@@ -877,7 +879,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         except:
             self._requestViewer.setMessage("", False)
             self._responseViewer.setMessage("", False)
-    
+
     def isURLValid(self, urlAdd):
         if (urlparse.urlparse(urlAdd) and urlAdd.strip().startswith("http") and not " " in urlAdd.strip()) or urlAdd.isspace() or not urlAdd:
             return True
@@ -950,7 +952,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLs','No Authentication'))
         self.tableMatrix = JTable(self.tableMatrix_DM)
         self.tableMatrix.setAutoCreateRowSorter(False)
-        self.tableMatrix.setSelectionForeground(Color.red)
+        self.tableMatrix.setSelectionForeground(Color(255,175,0))
         self.tableMatrix.getSelectionModel().addListSelectionListener(self._updateReqResView)
         self.tableMatrix.getColumnModel().getSelectionModel().addListSelectionListener(self._updateReqResView)
         self.tableMatrix.setOpaque(True)
@@ -974,7 +976,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabAuthPanel.setBottomComponent(_tabAuthPanel2)
 
         # panel bottom
-        _tabsReqRes = JTabbedPane()        
+        _tabsReqRes = JTabbedPane()
         self._requestViewer = self._callbacks.createMessageEditor(self, False)
         self._responseViewer = self._callbacks.createMessageEditor(self, False)
         _tabsReqRes.addTab("Request", self._requestViewer.getComponent())
@@ -1048,7 +1050,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self.tableMatrixAuthentication_DM = CustomDefaultTableModel(self.tableMatrixAuthentication, ('URLs', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'))
         self.tableMatrixAuthentication = JTable(self.tableMatrixAuthentication_DM)
         self.tableMatrixAuthentication.setAutoCreateRowSorter(False)
-        self.tableMatrixAuthentication.setSelectionForeground(Color.red)
+        self.tableMatrixAuthentication.setSelectionForeground(Color(255,175,0))
         self.tableMatrixAuthentication.getSelectionModel().addListSelectionListener(self._updateAuthenticationReqResView)
         self.tableMatrixAuthentication.getColumnModel().getSelectionModel().addListSelectionListener(self._updateAuthenticationReqResView)
         self.tableMatrixAuthentication.setOpaque(True)
@@ -1059,7 +1061,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         _tabAuthenticationPanel2.setLayout(BoxLayout(_tabAuthenticationPanel2, BoxLayout.Y_AXIS))
         _tabAuthenticationPanel2.add(self._lblAuthenticationNotification, BorderLayout.NORTH)
         _tabAuthenticationPanel2.add(self.tableMatrixAuthentication_SP, BorderLayout.NORTH)
-        
+
         self.progressBarAuthenticationPanel = JProgressBar()
         self.progressBarAuthenticationPanel.setMaximum(1000000)
         self.progressBarAuthenticationPanel.setMinimum(0)
@@ -1073,7 +1075,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabAuthenticationPanel.setBottomComponent(_tabAuthenticationPanel2)
 
         # panel bottom
-        _tabsAuthenticationReqRes = JTabbedPane()        
+        _tabsAuthenticationReqRes = JTabbedPane()
         self._requestViewerAuthentication = self._callbacks.createMessageEditor(self, False)
         self._responseViewerAuthentication = self._callbacks.createMessageEditor(self, False)
         _tabsAuthenticationReqRes.addTab("Request", self._requestViewerAuthentication.getComponent())
@@ -1084,7 +1086,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabAuthenticationSplitpane.setResizeWeight(0.7)
         self._tabAuthenticationSplitpane.setTopComponent(self._tabAuthenticationPanel)
         self._tabAuthenticationSplitpane.setBottomComponent(_tabsAuthenticationReqRes)
-        
+
 
     def _cbAuthenticationTypeFunc(self, ev):
         currentSelection = -1
@@ -1092,7 +1094,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             currentSelection = _authType
         except:
             pass
-        
+
         if currentSelection == -1:
             if self._cbAuthenticationType.getSelectedIndex() == 0:
                 self._lblAuthenticationNotification.text = "You can load http requests over right click or fetch from proxy history."
@@ -1141,7 +1143,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         t = Thread(target=self.historyFetcherThread, args=[self])
         t.start()
         return
-    
+
     def historyFetcherThread(self, ev):
         self._btnAuthenticationFetchHistory.setEnabled(False)
         self._btnAuthenticationReset.setEnabled(False)
@@ -1174,7 +1176,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
 
                 # 2 is body
                 _body = self._helpers.bytesToString(history.getRequest()[self._helpers.analyzeRequest(history).getBodyOffset():])
-                
+
                 self._urlAddresses.addElement(_url)
                 self.authenticationMatrix.append([_url, _header, _body])
 
@@ -1216,13 +1218,13 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._cbAuthenticationType.setSelectedIndex(0)
         return
 
-    
+
     def authenticationMatrixFunc(self, ev):
         # run authentication bypass
         t = Thread(target=self.authenticationMatrixThread, args=[self, self.authenticationMatrix])
         t.start()
         return
-    
+
     def _updateAuthenticationReqResView(self, ev):
         try:
             _row = self.tableMatrixAuthentication.getSelectedRow()
@@ -1248,7 +1250,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
             _httpService = self._helpers.buildHttpService(urlparse.urlparse(_url).hostname, _portNum, urlparse.urlparse(_url).scheme)
             _response = self._callbacks.makeHttpRequest(_httpService, _request)
             _status = str(self._helpers.analyzeResponse(self._helpers.bytesToString(_response.getResponse())).getStatusCode())
-            
+
             if (_column == 32 or _column == 33 or _column == 34) and _status == '200':
                 header = list(_header)
                 del header[3]
@@ -1291,7 +1293,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         elif 'Set-Cookie' in line:
                             if not line.split(' ', 2)[1].strip() in _cookies:
                                 _cookies = _cookies + line.split(' ', 2)[1].strip()
-                    
+
                     # redirection from body
                     _redirection = re.findall("<a\\s+[^>]*?href=[\'|\"](.*?)[\'\"].*?>", _msgBody, re.IGNORECASE)
                     if _redirection:
@@ -1305,8 +1307,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                             if not self.tableMatrixAuthentication_DM.getValueAt(_row, _column):
                                 self.tableMatrixAuthentication_DM.setValueAt(str(self._httpCalls[0][0]) + "*", _row, _column)
                             return self._httpCalls[0][1]
-                    
-                    if len(_cookies) > 10: 
+
+                    if len(_cookies) > 10:
                         _header.insert(3, _cookies)
 
                     if _location:
@@ -1357,7 +1359,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     _columnNum = 45
                 else:
                     _columnNum = 89
-                
+
                 _rowUrls = []
                 _searchFor = '/'
                 _rowUrls.append(_urlPath)
@@ -1373,7 +1375,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         if _url.count('/') != 3:
                             if urlparse.urlparse(_url).path.endswith('/'):
                                 _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
-                            else: 
+                            else:
                                 _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))
                             _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                             path = _url[:_locations[2]]
@@ -1385,7 +1387,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                                         _rowUrls.append(url)
                                         _columnNum = _columnNum + 1
                 # column6
-                
+
 
 
                 #column7, example url:  http://dvwa.local/company/users/admin?id=1
@@ -1577,7 +1579,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 for _url in _urls:
                     if _url.endswith('/'):
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
-                    else: 
+                    else:
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                         _locations.append(len(_url))
                     for _location in _locations[2:-1]:
@@ -1617,7 +1619,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         if urlparse.urlparse(_url).path.endswith('/'):
                             _url = _url.replace(urlparse.urlparse(_url).path, urlparse.urlparse(_url).path[:-1] + "%00/")
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-2]
-                        else: 
+                        else:
                             _url = _url.replace(urlparse.urlparse(_url).path, urlparse.urlparse(_url).path + "%00")
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
@@ -1642,7 +1644,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         _url = _url + "%00"
                         if urlparse.urlparse(_url).path.endswith('/'):
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-2]
-                        else: 
+                        else:
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                         path = _url[:_locations[2]]
@@ -1693,13 +1695,13 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
     def urlDuplicator(self, url):
         urls =[]
         urls.append(url)
-        
+
         if urlparse.urlparse(url).path.endswith("/") and url.count("/") == 3:
             return urls
         elif urlparse.urlparse(url).path.endswith("/"):
             urls.append((urlparse.urlparse(url).path[:-1]).join(url.rsplit(urlparse.urlparse(url).path, 1)))
         else:
-            urls.append((urlparse.urlparse(url).path + "/").join(url.rsplit(urlparse.urlparse(url).path, 1)))        
+            urls.append((urlparse.urlparse(url).path + "/").join(url.rsplit(urlparse.urlparse(url).path, 1)))
         return urls
 
     def authenticationMatrixThread(self, ev, _matrixList):
@@ -1719,7 +1721,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         for x in range(0, self.tableMatrixAuthentication_DM.getRowCount()):
             for y in range(1, self.tableMatrixAuthentication_DM.getColumnCount()):
                 self.tableMatrixAuthentication_DM.setValueAt("", x, y)
-                
+
         self._lblAuthenticationNotification.text = "Just a moment, the table dimension is being calculated."
         self.errorNumbers = 0
         try:
@@ -1836,7 +1838,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         if _url.count('/') != 3:
                             if urlparse.urlparse(_url).path.endswith('/'):
                                 _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
-                            else: 
+                            else:
                                 _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))
                             _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                             path = _url[:_locations[2]]
@@ -1853,7 +1855,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                                         _reqRes.append(self.authenticationMatrixCalls(url, _header, _body, _portNum, x, _columnNum, _progressBar))
                                         _cellHint.append("Target URL is '" + url + "'")
                 # column6
-                
+
 
 
                 #column7, example url:  http://dvwa.local/company/users/admin?id=1
@@ -2104,7 +2106,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 for _url in _urls:
                     if _url.endswith('/'):
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
-                    else: 
+                    else:
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                         _locations.append(len(_url))
                     for _location in _locations[2:-1]:
@@ -2161,7 +2163,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         if urlparse.urlparse(_url).path.endswith('/'):
                             _url = _url.replace(urlparse.urlparse(_url).path, urlparse.urlparse(_url).path[:-1] + "%00/")
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-2]
-                        else: 
+                        else:
                             _url = _url.replace(urlparse.urlparse(_url).path, urlparse.urlparse(_url).path + "%00")
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
@@ -2192,7 +2194,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         _url = _url + "%00"
                         if urlparse.urlparse(_url).path.endswith('/'):
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-2]
-                        else: 
+                        else:
                             _paths = urlparse.urlparse(_url).path.split('/', urlparse.urlparse(_url).path.count('/'))[:-1]
                         _locations = [i for i in range(len(str(_url))) if str(_url).startswith(_searchFor, i)]
                         path = _url[:_locations[2]]
@@ -2228,7 +2230,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         self.currentText = self.currentText + " ' * ' sign at the end shows SSO interaction."
                 else:
                     self.currentText = "Successful connection rate is very low, please check your network connection!"
-            
+
             self.progressBarAuthenticationPanel.setValue(1000000)
             self._btnAuthenticationFetchHistory.setEnabled(True)
             self._btnAuthenticationReset.setEnabled(True)
@@ -2261,7 +2263,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     colors += ", Yellow"
                 else:
                     colors += "Yellow"
-            
+
             if colors:
                 if colors.count(",") >= 1:
                     colors += " colors show different level of possible access violations"
@@ -2370,8 +2372,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         <li>Now, it&#39;s ready for execution. Simply click the <strong>&#39;Run&#39;</strong> button, and the table will be populated accordingly.</li>
         </ul>
         <img width=\"1000\" alt=\"Authorization Matrix\" src=\"https://github.com/user-attachments/assets/62255976-d633-4a6e-b0a5-716d060a3451\">
-        
-        
+
+
         <p>A little bit more details:</p>
         <ol>
         <li>This is the field where you enter the username for the session you provide. You can add up to four different users, with each user being assigned a unique color to enhance readability.<ul>
@@ -2394,7 +2396,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         </ol>
         <p>Please note that potential session terminators (such as logoff, sign-out, etc.) and specific file types (such as CSS, images, JavaScript, etc.) will be filtered out from both the &#39;Spider&#39; and the user&#39;s URL list.</p>
         <img width=\"1000\" alt=\"User Access Table Details\" src=\"https://github.com/volkandindar/agartha/assets/50321735/e7ce918e-d40e-44c5-ada7-ee1c0cfa487b\">
-        
+
         <p>After clicking &#39;RUN&#39;, the tool will populate the user and URL matrix with different colors. In addition to user-specific colors, you will see red, orange, and yellow cells indicating possible access issues.</p>
         <ul>
         <li><strong>Red</strong> highlights a critical access violation, indicated by the response returning &#39;HTTP 200&#39; with the same content length.</li>
@@ -2421,13 +2423,13 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         <li>You can send individual requests by right-clicking. Session identifiers will be retained/untouched, making this approach suitable for attack <strong>Case 2</strong>. This controlled approach allows you to assess whether privileged sources are accessible without proper roles. It will be more specific and faster, as users will select which URLs to test rather than copying everything from history.</li>
         </ol>
         <img width=\"1000\" alt=\"Sending individual requests\" src=\"https://github.com/volkandindar/agartha/assets/50321735/54b567a0-6b69-43f4-b727-f01709f4cc79\">
-        
+
         <p>The page we aim to access belongs to a privileged user group, and we retain our session identifiers to verify if Privilege Escalation is feasible.
         <br/><br/>
         Simply clicking the &#39;RUN&#39; button will execute the task.</p>
         <p>The figure below illustrates that a URL may have an access issue, with the 'Red' color indicating a warning.</p>
         <img width=\"1000\" alt=\"Attempt details\" src=\"https://github.com/volkandindar/agartha/assets/50321735/b7c81258-aa11-42dc-87c6-c25b1047056c\">
-        
+
         <ol>
         <li>Load requests from the proxy history by selecting the target hostname and clicking the 'Load Requests' button.</li>
         <li>URL and Header details</li>
@@ -2440,7 +2442,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         <p>The feature enables the conversion of HTTP requests into JavaScript code, which can be particularly useful for going beyond XSS vulnerabilities and bypassing header restrictions.</p>
         <p>To use this feature, simply right-click on any HTTP request and select &#39;Extensions &gt; Agartha &gt; Copy as JavaScript&#39;.</p>
         <img width=\"1000\" alt=\"Copy as JavaScript\" src=\"https://github.com/volkandindar/agartha/assets/50321735/c0149adb-d0ab-4aa3-98a1-34b86bd68d3f\">
-        
+
         <p>It will automatically save to your clipboard, including some additional remarks for your reference. For example:</p>
         <pre><code>
         Http request with minimum header paramaters in JavaScript:
@@ -2450,7 +2452,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 xhr.withCredentials=true;
                 xhr.send();
             &lt;/script&gt;
-        
+
         Http request with all header paramaters (except cookies, tokens, etc) in JavaScript, you may need to remove unnecessary fields:
             &lt;script&gt;
                 var xhr=new XMLHttpRequest();
@@ -2469,7 +2471,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 xhr.setRequestHeader(&#39;Priority&#39;,&#39; u=1&#39;);
                 xhr.send();
             &lt;/script&gt;
-        
+
         For redirection, please also add this code before &#39;&lt;/script&gt;&#39; tag:
             xhr.onreadystatechange=function(){if (this.status===302){var location=this.getResponseHeader(&#39;Location&#39;);return ajax.call(this,location);}};
         </code></pre>
@@ -2496,7 +2498,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._txtCheatSheetLFI += "\t/etc/shadow\t\t\tC:\\windows\\system32\\license.rtf\n"
         self._txtCheatSheetLFI += "\t/etc/group\t\t\t\tC:\\users\\public\\desktop\\desktop.ini\n"
         self._txtCheatSheetLFI += "\t/var/log/auth.log\t\t\tC:\\windows\\system32\\eula.txt\n"
-        
+
         self._txtCheatSheetCommandInj = ""
         self._txtCheatSheetCommandInj += "Common commands for Unix\t\t\tCommon commands for Windows\n"
         self._txtCheatSheetCommandInj += "\tcat /etc/passwd\t\t\t\ttype file.txt\n"
@@ -2586,7 +2588,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabDictPanel_SQLType.setVisible(False)
         self._tabDictPanel_SQLOptions = JPanel(FlowLayout(FlowLayout.LEADING, 10, 0))
         self._tabDictPanel_SQLOptions.add(self._cbSqlEncoding, BorderLayout.PAGE_START)
-        self._tabDictPanel_SQLOptions.add(self._cbSqlWafBypass, BorderLayout.PAGE_START)        
+        self._tabDictPanel_SQLOptions.add(self._cbSqlWafBypass, BorderLayout.PAGE_START)
         self._tabDictPanel_SQLOptions.setVisible(False)
         self._tabDictPanel_SQLi = JPanel(FlowLayout(FlowLayout.LEADING, 10, 0))
         self._tabDictPanel_SQLi.add(self._cbStackedSQL, BorderLayout.PAGE_START)
@@ -2608,8 +2610,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         _tabDictPanel_2 = JPanel(FlowLayout(FlowLayout.LEADING, 10, 0))
         _tabDictPanel_2.add(self._lblStatusLabel)
         # center panel
-        
-        # bottom panel 
+
+        # bottom panel
         self._tabDictResultDisplay = JTextPane()
         self._tabDictResultDisplay.setContentType("text")
         self._tabDictResultDisplay.setText(self._txtCheatSheetLFI)
@@ -2617,7 +2619,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         _tabDictPanel_3 = JPanel(BorderLayout(10, 10))
         _tabDictPanel_3.setBorder(EmptyBorder(10, 0, 0, 0))
         _tabDictPanel_3.add(JScrollPane(self._tabDictResultDisplay), BorderLayout.CENTER)
-        # bottom panel 
+        # bottom panel
 
         self._tabDictPanel = JPanel()
         self._tabDictPanel.setLayout(BoxLayout(self._tabDictPanel, BoxLayout.Y_AXIS))
@@ -2626,7 +2628,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._tabDictPanel.add(_tabDictPanel_3)
 
     def tableMatrixReset(self, ev):
-        self.tableMatrix = []        
+        self.tableMatrix = []
         self.tableMatrix_DM = CustomDefaultTableModel(self.tableMatrix, ('URLs','No Authentication'))
         self.tableMatrix = JTable(self.tableMatrix_DM)
         self.tableMatrix_SP.getViewport().setView((self.tableMatrix))
@@ -2641,8 +2643,8 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
         self._requestViewer.setMessage("", False)
         self._responseViewer.setMessage("", False)
         self._lblAuthNotification.text = "Please add users to create an auth matrix!"
-        self._lblAuthNotification.setForeground (Color.black)
-        self._tbAuthNewUser.setForeground (Color.black)        
+        self._lblAuthNotification.setForeground (Color(188,188,188))
+        self._tbAuthNewUser.setForeground (Color(188,188,188))
         self._txtHeaderDefault = "GET /example HTTP/1.1\nHost: localhost.com\nAccept-Encoding: gzip,deflate\nConnection: close\nCookie: SessionID=......"
         self._tbAuthHeader.setText(self._txtHeaderDefault)
         self._txtURLDefault = "http://localhost.com/example"
@@ -2678,23 +2680,23 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                 break
         if not _urlAdd:
             self._lblAuthNotification.text = "Please provide minimum one URL!"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
 
         if not self.isURLValid(str(_urlAdd)) or _urlAdd == self._txtURLDefault:
-            self._tbAuthURL.setForeground (Color.red)
+            self._tbAuthURL.setForeground (Color(255,175,0))
             self._lblAuthNotification.text = "URLs should start with 'http/s' and not have any spaces. Please check: '" + _urlAdd + "'"
-            self._lblAuthNotification.setForeground (Color.red)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
             return
-        self._tbAuthURL.setForeground (Color.black)
-        
+        self._tbAuthURL.setForeground (Color(188,188,188))
+
         if not self._tbAuthHeader.getText().strip() or self._tbAuthHeader.getText().strip() == self._txtHeaderDefault:
-            self._tbAuthHeader.setForeground (Color.red)
+            self._tbAuthHeader.setForeground (Color(255,175,0))
             self._lblAuthNotification.text = "Please provide a valid header!"
-            self._lblAuthNotification.setForeground (Color.red)
-            return        
-        self._tbAuthHeader.setForeground (Color.black)        
-        self._lblAuthNotification.setForeground (Color.black)
+            self._lblAuthNotification.setForeground (Color(255,175,0))
+            return
+        self._tbAuthHeader.setForeground (Color(188,188,188))
+        self._lblAuthNotification.setForeground (Color(188,188,188))
 
         self._lblAuthNotification.text = "The crawler has just started. Please bear in mind, links based on Javascript may not be detected properly."
         self._btnAuthNewUserAdd.setEnabled(False)
@@ -2724,7 +2726,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                     # request was in POST alike method and will be in GET
                     if self._cbAuthGETPOST.getSelectedIndex() == 0:
                         header = self._callbacks.getHelpers().toggleRequestMethod((header))
-                
+
                 portNum = 80
                 if urlparse.urlparse(_url).port:
                     portNum = urlparse.urlparse(_url).port
@@ -2742,7 +2744,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         self._cbSiteMapDepth.setEnabled(True)
                         self._btnSiteMapGeneratorRun.setEnabled(True)
                         return
-                
+
                 msgBody = self._helpers.bytesToString(_httpReqRes.getResponse()[self._helpers.analyzeResponse(self._helpers.bytesToString(_httpReqRes.getResponse())).getBodyOffset():])
 
                 if msgBody:
@@ -2786,7 +2788,7 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                                 link = _url.rsplit("/", 2)[0] + '/' + link
                             else:
                                 link = _url.rsplit("/", 1)[0] + '/' + link
-                        else: 
+                        else:
                             link = ""
                             continue
 
@@ -2802,15 +2804,15 @@ class BurpExtender(IBurpExtender, ITab, IMessageEditorController, IContextMenuFa
                         break
                     crawledURLs = len(_userURLs) - 1
                     folderDepth = folderDepth + 1
-                
+
             except:
                 self._lblAuthNotification.text = str(sys.exc_info()[1])
-        
+
         self._tbAuthURL.setText(userLinks)
         if len(_userURLs) > 1:
-            self._lblAuthNotification.text = "The crawler has just finished, and '" + str(len(_userURLs)) + "' links have been found with folder depth '"+ str(self._cbSiteMapDepth.getSelectedIndex()) +"'. Other hosts than user's session are ignored." 
+            self._lblAuthNotification.text = "The crawler has just finished, and '" + str(len(_userURLs)) + "' links have been found with folder depth '"+ str(self._cbSiteMapDepth.getSelectedIndex()) +"'. Other hosts than user's session are ignored."
         else:
-            self._lblAuthNotification.text = "The crawler has just finished, and no any links have been found." 
+            self._lblAuthNotification.text = "The crawler has just finished, and no any links have been found."
         self._btnAuthNewUserAdd.setEnabled(True)
         self._tbAuthNewUser.setEnabled(True)
         self._cbSiteMapDepth.setEnabled(True)
@@ -2831,12 +2833,13 @@ class UserEnabledRenderer(TableCellRenderer):
         self.focusX = -1
         self.focusY = -1
         self.colorsUser = [Color(204, 229, 255), Color(204, 255, 204), Color(204, 204, 255), Color(190,220,210)]
-        self.colorsAlert = [Color.white, Color(255, 153, 153), Color(255, 218, 185), Color(255, 255, 204), Color(233, 233, 233), Color(255, 204, 204)]
+        self.colorsAlert = [Color(188,188,188), Color(255, 153, 153), Color(255, 218, 185), Color(255, 255, 204), Color(233, 233, 233), Color(255, 204, 204)]
 
     def getTableCellRendererComponent(self, table, value, isSelected, hasFocus, row, column):
         cell = self._defaultCellRender.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         toolTipMessage = ""
-        cell.setBackground(self.colorsAlert[0])
+        #cell.setBackground(self.colorsAlert[0])
+        cell.setForeground(self.colorsAlert[0])
         if len(self.userList[0]) < 10:
             # Authorization Matrix Tab
             try:
@@ -2844,7 +2847,8 @@ class UserEnabledRenderer(TableCellRenderer):
                     toolTipMessage = "URL list."
                 elif table.getValueAt(row, column) and not table.getValueAt(row, column).startswith("HTTP 2") and not table.getValueAt(row, column).startswith("HTTP 3"):
                     # error or http 4XX/5XX
-                    cell.setBackground(self.colorsAlert[4])
+                    #cell.setBackground(self.colorsAlert[4])
+                    cell.setForeground(self.colorsAlert[4])
                     toolTipMessage = "The request returns HTTP 4XX/5xx response!"
                 elif column == 1:
                     # no auth
@@ -2853,35 +2857,45 @@ class UserEnabledRenderer(TableCellRenderer):
                             if table.getValueAt(row, 0) in self.userList[y - 1]:
                                 if table.getValueAt(row, y) == table.getValueAt(row, column):
                                     if table.getValueAt(row, y).startswith("HTTP 2"):
-                                        cell.setBackground(self.colorsAlert[1])
+                                        #cell.setBackground(self.colorsAlert[1])
+                                        cell.setForeground(self.colorsAlert[1])
                                         toolTipMessage = "The URL returns HTTP 2XX without authentication, and the response is same as URL owner!"
                                     elif table.getValueAt(row, y).startswith("HTTP 3"):
-                                        if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
-                                            cell.setBackground(self.colorsAlert[3])
+                                        if not cell.getForeground() == self.colorsAlert[1] and not cell.getForeground() == self.colorsAlert[2]:
+                                            #cell.setBackground(self.colorsAlert[3])
+                                            cell.setForeground(self.colorsAlert[3])
                                             toolTipMessage = "The URL returns HTTP 3XX without authentication, but the response is same as URL owner!"
                                 elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
-                                    if not cell.getBackground() == self.colorsAlert[1]:
-                                        cell.setBackground(self.colorsAlert[2])
+                                    #if not cell.getBackground() == self.colorsAlert[1]:
+                                    if not cell.getForeground() == self.colorsAlert[1]:
+                                        #cell.setBackground(self.colorsAlert[2])
+                                        cell.setForeground(self.colorsAlert[2])
                                         toolTipMessage = "The URL returns same HTTP response code with URL owner, but no authentication!"
                 elif table.getValueAt(row, 0) in self.userList[column - 1]:
-                    cell.setBackground(self.colorsUser[column - 2])
+                    #cell.setBackground(self.colorsUser[column - 2])
+                    cell.setForeground(self.colorsUser[column - 2])
                     toolTipMessage = "Http response of the user's own URL!"
-                else:    
+                else:
                     # other users
                     if _colorful:
                         for y in range(2, table.getColumnCount()):
                             if table.getValueAt(row, 0) in self.userList[y - 1]:
                                 if table.getValueAt(row, y) == table.getValueAt(row, column):
                                     if table.getValueAt(row, y).startswith("HTTP 2"):
-                                        cell.setBackground(self.colorsAlert[1])
+                                        cell.setForeground(self.colorsAlert[1])
+                                        #cell.setBackground(self.colorsAlert[1])
                                         toolTipMessage = "The URL is not in the user's list, but the response (HTTP 2XX) is same as URL owner!"
                                     elif table.getValueAt(row, y).startswith("HTTP 3"):
-                                        if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
-                                            cell.setBackground(self.colorsAlert[3])
+                                        #if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
+                                        if not cell.getForeground() == self.colorsAlert[1] and not cell.getForeground() == self.colorsAlert[2]:
+                                            #cell.setBackground(self.colorsAlert[3])
+                                            cell.setForeground(self.colorsAlert[3])
                                             toolTipMessage = "The URL is not in the user's list, but the response (HTTP 3XX) is same as URL owner!"
                                 elif table.getValueAt(row, y)[:8] == table.getValueAt(row, column)[:8]:
-                                    if not cell.getBackground() == self.colorsAlert[1]:    
-                                        cell.setBackground(self.colorsAlert[2])
+                                    #if not cell.getBackground() == self.colorsAlert[1]:
+                                    if not cell.getForeground() == self.colorsAlert[1]:
+                                        cell.setForeground(self.colorsAlert[2])
+                                        #cell.setBackground(self.colorsAlert[2])
                                         toolTipMessage = "The URL is not in the user's list, but returns same HTTP response code with URL owner!"
                 cell.setToolTipText(toolTipMessage)
 
@@ -2904,60 +2918,60 @@ class UserEnabledRenderer(TableCellRenderer):
                     toolTipMessage = self.tipMessages[row][column]
 
                     if column == 0:
-                        if cell.getBackground() == self.colorsAlert[0]:
+                        if cell.getForeground() == self.colorsAlert[0]:
                             for y in range(1, table.getColumnCount()):
-                                if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getBackground() == self.colorsAlert[1]:
-                                    cell.setBackground(self.colorsAlert[1])
+                                if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getForeground() == self.colorsAlert[1]:
+                                    cell.setForeground(self.colorsAlert[1])
                                     UserEnabledRenderer._colorsRed = True
                                     break
-                            if not cell.getBackground() == self.colorsAlert[1]:
+                            if not cell.getForeground() == self.colorsAlert[1]:
                                 for y in range(1, table.getColumnCount()):
-                                    if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getBackground() == self.colorsAlert[2]:
-                                        cell.setBackground(self.colorsAlert[2])
+                                    if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getForeground() == self.colorsAlert[2]:
+                                        cell.setForeground(self.colorsAlert[2])
                                         UserEnabledRenderer._colorsOrange = True
                                         break
-                            if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2]:
+                            if not cell.getForeground() == self.colorsAlert[1] and not cell.getForeground() == self.colorsAlert[2]:
                                 for y in range(1, table.getColumnCount()):
-                                    if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getBackground() == self.colorsAlert[3]:
-                                        cell.setBackground(self.colorsAlert[3])
+                                    if table.getCellRenderer(row, y).getTableCellRendererComponent(table, value, isSelected, hasFocus, row, y).getForeground() == self.colorsAlert[3]:
+                                        cell.setForeground(self.colorsAlert[3])
                                         UserEnabledRenderer._colorsYellow = True
                                         break
                     elif column == 1:
                         if _authType == 0:
                             if str(table.getValueAt(row, column)).startswith("2"):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The response returns Http 2XX, even though all session identifiers have been removed!\n" + self.tipMessages[row][column]
                         elif _authType == 1:
                             # SSO
                             if str(table.getValueAt(row, column)).startswith("2"):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The response returns Http 2XX, even though SSO is required!\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith("3") and not str(table.getValueAt(row, column)).endswith("*"):
                                 # 302 and 301
-                                cell.setBackground(self.colorsAlert[2])
+                                cell.setForeground(self.colorsAlert[2])
                                 UserEnabledRenderer._colorsOrange = True
                                 toolTipMessage = "Http 3XX requests are not being redirected to an SSO server!\n" + self.tipMessages[row][column]
                             elif "403" in str(table.getValueAt(row, column)):
-                                cell.setBackground(self.colorsAlert[3])
+                                cell.setForeground(self.colorsAlert[3])
                                 UserEnabledRenderer._colorsYellow = True
                                 toolTipMessage = "Http 403 might be replied directly by the target system!\n" + self.tipMessages[row][column]
                         elif _authType == 2:
                             # mTLS
                             if str(table.getValueAt(row, column)).startswith('2'):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The server returns Http 2XX without client-side certificate.\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith('3'):
-                                cell.setBackground(self.colorsAlert[2])
+                                cell.setForeground(self.colorsAlert[2])
                                 UserEnabledRenderer._colorsOrange = True
                                 toolTipMessage = "The server gives responses without client-side certificate.\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith('4') or str(table.getValueAt(row, column)).startswith('5'):
-                                cell.setBackground(self.colorsAlert[3])
+                                cell.setForeground(self.colorsAlert[3])
                                 UserEnabledRenderer._colorsYellow = True
                                 toolTipMessage = "The server gives responses without client-side certificate.\n" + self.tipMessages[row][column]
-                    
+
                     else:
                         if column == 32:
                           toolTipMessage = "'X-Original-URL' parameter has been added to the header."
@@ -2974,34 +2988,34 @@ class UserEnabledRenderer(TableCellRenderer):
 
                         if not str(table.getValueAt(row, 1)).startswith("2"):
                             if str(table.getValueAt(row, column)).startswith("2") and not str(table.getValueAt(row, column)).endswith("-"):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The bypass attempt returns Http 2XX!\n" + self.tipMessages[row][column]
 
                         if _authType == 1:
                             # SSO
                             if str(table.getValueAt(row, column)).startswith('2'):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The response returns Http 2XX, even though SSO is required!\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith("3") and not str(table.getValueAt(row, column)).endswith("*"):
                                 # 302 and 301
-                                cell.setBackground(self.colorsAlert[2])
+                                cell.setForeground(self.colorsAlert[2])
                                 UserEnabledRenderer._colorsOrange = True
                                 toolTipMessage = "Http 3XX requests are not being redirected to an SSO server!\n" + self.tipMessages[row][column]
 
                         if _authType == 2:
                             # mTLS
                             if str(table.getValueAt(row, column)).startswith('2'):
-                                cell.setBackground(self.colorsAlert[1])
+                                cell.setForeground(self.colorsAlert[1])
                                 UserEnabledRenderer._colorsRed = True
                                 toolTipMessage = "The server returns Http 2XX without client-side certificate.\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith('3'):
-                                cell.setBackground(self.colorsAlert[2])
+                                cell.setForeground(self.colorsAlert[2])
                                 UserEnabledRenderer._colorsOrange = True
                                 toolTipMessage = "The server gives responses without client-side certificate.\n" + self.tipMessages[row][column]
                             elif str(table.getValueAt(row, column)).startswith('4') or str(table.getValueAt(row, column)).startswith('5'):
-                                cell.setBackground(self.colorsAlert[3])
+                                cell.setForeground(self.colorsAlert[3])
                                 UserEnabledRenderer._colorsYellow = True
                                 toolTipMessage = "The server gives responses without client-side certificate.\n" + self.tipMessages[row][column]
 
@@ -3010,8 +3024,8 @@ class UserEnabledRenderer(TableCellRenderer):
                     if hasFocus:
                         self.focusX = row
                         self.focusY = column
-                        if not cell.getBackground() == self.colorsAlert[1] and not cell.getBackground() == self.colorsAlert[2] and not cell.getBackground() == self.colorsAlert[3]:
-                            cell.setBackground(Color(219,219,219))
+                        if not cell.getForeground() == self.colorsAlert[1] and not cell.getForeground() == self.colorsAlert[2] and not cell.getForeground() == self.colorsAlert[3]:
+                            cell.setForeground(Color(219,219,219))
                         cell.setFont(cell.getFont().deriveFont(Font.BOLD | Font.ITALIC));
                         table.repaint()
                     elif self.focusX == row and column == 0:
